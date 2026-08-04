@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import type { Invoice, StoreSettings } from '../types/pos';
-import { History, Search, Printer, FileText, X, Banknote, QrCode, CreditCard, Sparkles, TrendingUp } from 'lucide-react';
+import type { Invoice, StoreSettings, User } from '../types/pos';
+import { History, Search, Printer, X, Banknote, QrCode, CreditCard, ShieldCheck, Lock, EyeOff } from 'lucide-react';
 
 interface InvoiceHistoryModalProps {
   isOpen: boolean;
@@ -8,19 +8,23 @@ interface InvoiceHistoryModalProps {
   invoices: Invoice[];
   settings: StoreSettings;
   onSelectInvoiceToPrint: (invoice: Invoice) => void;
+  currentUser: User | null;
+  onOpenLoginModal?: () => void;
 }
 
 export const InvoiceHistoryModal: React.FC<InvoiceHistoryModalProps> = ({
   isOpen,
   onClose,
   invoices,
-  settings,
-  onSelectInvoiceToPrint
+  onSelectInvoiceToPrint,
+  currentUser
 }) => {
   const [query, setQuery] = useState('');
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
 
   if (!isOpen) return null;
+
+  const isAdmin = currentUser?.role === 'admin';
 
   const filteredInvoices = invoices.filter(inv => {
     const term = query.toLowerCase().trim();
@@ -32,9 +36,8 @@ export const InvoiceHistoryModal: React.FC<InvoiceHistoryModalProps> = ({
     );
   });
 
-  // Calculate Sales Summary Statistics
+  // Calculate Sales Summary Statistics (Admin Only)
   const totalRevenue = invoices.reduce((acc, i) => acc + i.grandTotal, 0);
-  const totalDiscount = invoices.reduce((acc, i) => acc + i.totalDiscount, 0);
   const totalTax = invoices.reduce((acc, i) => acc + i.totalGST, 0);
 
   const cashTotal = invoices.filter(i => i.paymentMode === 'Cash').reduce((acc, i) => acc + i.grandTotal, 0);
@@ -48,7 +51,7 @@ export const InvoiceHistoryModal: React.FC<InvoiceHistoryModalProps> = ({
         <div className="p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2">
             <History className="w-5 h-5 text-purple-400" />
-            <h3 className="font-bold text-slate-100 text-base">Sales History & Financial Summary</h3>
+            <h3 className="font-bold text-slate-100 text-base">Invoice History & Receipt Reprinting</h3>
             <span className="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">
               {invoices.length} Bills Total
             </span>
@@ -58,33 +61,35 @@ export const InvoiceHistoryModal: React.FC<InvoiceHistoryModalProps> = ({
           </button>
         </div>
 
-        {/* Financial Analytics Summary Grid */}
-        <div className="p-4 bg-slate-950/60 border-b border-slate-800 grid grid-cols-2 sm:grid-cols-4 gap-3 shrink-0">
-          <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
-            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Sales Revenue</div>
-            <div className="text-xl font-black font-mono text-cyan-400 mt-0.5">₹{Math.round(totalRevenue).toLocaleString('en-IN')}</div>
-          </div>
-          <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
-            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-              <Banknote className="w-3.5 h-3.5 text-emerald-400" /> Cash Received
+        {/* Financial Analytics Summary Grid: SHOWN ONLY FOR ADMIN */}
+        {isAdmin && (
+          <div className="p-4 bg-slate-950/60 border-b border-slate-800 grid grid-cols-2 sm:grid-cols-4 gap-3 shrink-0">
+            <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
+              <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Sales Revenue</div>
+              <div className="text-xl font-black font-mono text-cyan-400 mt-0.5">₹{Math.round(totalRevenue).toLocaleString('en-IN')}</div>
             </div>
-            <div className="text-lg font-bold font-mono text-emerald-400 mt-0.5">₹{Math.round(cashTotal).toLocaleString('en-IN')}</div>
-          </div>
-          <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
-            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-              <QrCode className="w-3.5 h-3.5 text-cyan-400" /> UPI Payments
+            <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
+              <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                <Banknote className="w-3.5 h-3.5 text-emerald-400" /> Cash Received
+              </div>
+              <div className="text-lg font-bold font-mono text-emerald-400 mt-0.5">₹{Math.round(cashTotal).toLocaleString('en-IN')}</div>
             </div>
-            <div className="text-lg font-bold font-mono text-cyan-300 mt-0.5">₹{Math.round(upiTotal).toLocaleString('en-IN')}</div>
-          </div>
-          <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
-            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-              <CreditCard className="w-3.5 h-3.5 text-purple-400" /> Card / Tax Collected
+            <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
+              <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                <QrCode className="w-3.5 h-3.5 text-cyan-400" /> UPI Payments
+              </div>
+              <div className="text-lg font-bold font-mono text-cyan-300 mt-0.5">₹{Math.round(upiTotal).toLocaleString('en-IN')}</div>
             </div>
-            <div className="text-xs font-mono font-bold text-purple-300 mt-1">
-              Card: ₹{Math.round(cardTotal)} | GST: ₹{Math.round(totalTax)}
+            <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
+              <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                <CreditCard className="w-3.5 h-3.5 text-purple-400" /> Card / Tax Collected
+              </div>
+              <div className="text-xs font-mono font-bold text-purple-300 mt-1">
+                Card: ₹{Math.round(cardTotal)} | GST: ₹{Math.round(totalTax)}
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Filter Bar */}
         <div className="p-3 bg-slate-900 border-b border-slate-800 shrink-0">
@@ -92,7 +97,7 @@ export const InvoiceHistoryModal: React.FC<InvoiceHistoryModalProps> = ({
             <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-500" />
             <input
               type="text"
-              placeholder="Search Invoice #, Customer, Phone, Pay Mode..."
+              placeholder="Search Invoice #, Customer Name, Phone..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               className="w-full bg-slate-950 border border-slate-700 focus:border-purple-500 rounded-xl pl-9 pr-3 py-1.5 text-xs text-white outline-none"

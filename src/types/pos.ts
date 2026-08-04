@@ -1,6 +1,15 @@
 export type DiscountType = 'percent' | 'flat';
 export type PaymentMode = 'Cash' | 'UPI' | 'Card';
 export type PriceTier = 'retail' | 'wholesale';
+export type UserRole = 'admin' | 'worker';
+
+export interface User {
+  id: string;
+  username: string;
+  email: string;
+  role: UserRole;
+  createdAt: string;
+}
 
 export interface Item {
   id: string;

@@ -1,6 +1,7 @@
 import React from 'react';
 import type { Invoice, StoreSettings } from '../types/pos';
 import { Printer, X, Sparkles } from 'lucide-react';
+import { STORE_LOGO_DATA_URI } from '../data/logoDataUri';
 
 interface PrintReceiptModalProps {
   invoice: Invoice | null;
@@ -44,6 +45,13 @@ export const PrintReceiptModal: React.FC<PrintReceiptModalProps> = ({
             <div className="w-[80mm] bg-white text-slate-950 p-4 text-xs font-mono rounded shadow-lg border border-slate-300 select-text leading-tight">
               {/* Header */}
               <div className="text-center space-y-0.5 border-b border-slate-300 pb-2">
+                <div className="flex justify-center mb-2">
+                  <img
+                    src={STORE_LOGO_DATA_URI}
+                    alt="SRI AMMAN THAIS Logo"
+                    className="w-28 h-28 object-contain mx-auto"
+                  />
+                </div>
                 <div className="font-black text-sm uppercase">{settings.storeName}</div>
                 <div className="text-[10px] text-slate-600 font-semibold">{settings.storeTagline}</div>
                 <div className="text-[10px] text-slate-600">{settings.addressLine1}</div>
@@ -174,6 +182,13 @@ export const PrintReceiptModal: React.FC<PrintReceiptModalProps> = ({
       {/* Hidden printable receipt for window.print() */}
       <div id="printable-receipt" className="hidden print:block">
         <div className="text-center pb-2">
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '6px' }}>
+            <img
+              src={STORE_LOGO_DATA_URI}
+              alt="SRI AMMAN THAIS Logo"
+              style={{ width: '90px', height: '90px', objectFit: 'contain', margin: '0 auto' }}
+            />
+          </div>
           <div style={{ fontSize: '14px', fontWeight: 'bold' }}>{settings.storeName}</div>
           <div>{settings.storeTagline}</div>
           <div>{settings.addressLine1}</div>

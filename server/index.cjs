@@ -171,6 +171,96 @@ app.post('/api/settings', async (req, res) => {
   }
 });
 
+// User Authentication Endpoints
+const ADMIN_EMAIL = 'sathyapathi555@gmail.com';
+
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { identifier, password } = req.body;
+    if (!identifier || !password) {
+      return res.status(400).json({ error: 'Username/Email and Password are required.' });
+    }
+
+    let user = await db.findUserByEmail(identifier);
+    if (!user) {
+      user = await db.findUserByUsername(identifier);
+    }
+
+    if (!user || user.password !== password) {
+      return res.status(401).json({ error: 'Invalid username/email or password.' });
+    }
+
+    // Force sathyapathi555@gmail.com to be admin if email matches
+    const role = user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase() ? 'admin' : user.role;
+
+    res.json({
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role,
+        createdAt: user.createdAt
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const { username, email, password } = req.body;
+    if (!username || !email || !password) {
+      return res.status(400).json({ error: 'Username, Email, and Password are required.' });
+    }
+
+    const existingEmail = await db.findUserByEmail(email);
+    if (existingEmail) {
+      return res.status(400).json({ error: 'An account with this email already exists.' });
+    }
+
+    const existingUser = await db.findUserByUsername(username);
+    if (existingUser) {
+      return res.status(400).json({ error: 'Username is already taken.' });
+    }
+
+    // Auto-assign admin role ONLY to sathyapathi555@gmail.com
+    const role = email.trim().toLowerCase() === ADMIN_EMAIL.toLowerCase() ? 'admin' : 'worker';
+
+    const newUser = {
+      id: `user-${Date.now()}`,
+      username: username.trim(),
+      email: email.trim(),
+      password,
+      role,
+      createdAt: new Date().toISOString()
+    };
+
+    await db.createUser(newUser);
+
+    res.json({
+      user: {
+        id: newUser.id,
+        username: newUser.username,
+        email: newUser.email,
+        role: newUser.role,
+        createdAt: newUser.createdAt
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/auth/users', async (req, res) => {
+  try {
+    const users = await db.getUsers();
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Serve Static Built Vite Frontend in Cloud Production Mode
 const distPath = path.join(__dirname, '../dist');
 app.use(express.static(distPath));

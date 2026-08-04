@@ -179,3 +179,34 @@ export const saveLanSettings = async (settings: StoreSettings): Promise<StoreSet
     return null;
   }
 };
+
+export const loginApi = async (identifier: string, password: string): Promise<{ user: any } | { error: string }> => {
+  try {
+    const res = await fetch(`${API_BASE}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ identifier, password })
+    });
+    const data = await res.json();
+    if (!res.ok) return { error: data.error || 'Login failed' };
+    return data;
+  } catch (err: any) {
+    return { error: err.message || 'Connection error to authentication server' };
+  }
+};
+
+export const registerApi = async (username: string, email: string, password: string): Promise<{ user: any } | { error: string }> => {
+  try {
+    const res = await fetch(`${API_BASE}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, email, password })
+    });
+    const data = await res.json();
+    if (!res.ok) return { error: data.error || 'Registration failed' };
+    return data;
+  } catch (err: any) {
+    return { error: err.message || 'Connection error to authentication server' };
+  }
+};
+

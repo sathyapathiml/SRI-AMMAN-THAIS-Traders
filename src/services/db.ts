@@ -11,7 +11,7 @@ const STORAGE_KEYS = {
 };
 
 export const defaultStoreSettings: StoreSettings = {
-  storeName: 'SRI LAKSHMI FIREWORKS & CRACKERS',
+  storeName: 'SRI AMMAN THAIS FIREWORKS & CRACKERS',
   storeTagline: 'Whole Sale & Retail Crackers Superstore',
   addressLine1: 'Main Market Road, Near Town Clock Tower',
   addressLine2: 'Sivakasi / Chennai, Tamil Nadu - 600001',
@@ -28,23 +28,33 @@ export const defaultPrinterConfig: PrinterConfig = {
   printMode: 'browser'
 };
 
+export const sortInventoryCategoryWise = (items: Item[]): Item[] => {
+  return [...items].sort((a, b) => {
+    const catCompare = (a.category || '').localeCompare(b.category || '');
+    if (catCompare !== 0) return catCompare;
+    return (a.itemCode || '').localeCompare(b.itemCode || '', undefined, { numeric: true });
+  });
+};
+
 export const getStoredInventory = (): Item[] => {
   try {
     const data = localStorage.getItem(STORAGE_KEYS.INVENTORY);
     if (!data) {
-      localStorage.setItem(STORAGE_KEYS.INVENTORY, JSON.stringify(initialInventory));
-      return initialInventory;
+      const sorted = sortInventoryCategoryWise(initialInventory);
+      localStorage.setItem(STORAGE_KEYS.INVENTORY, JSON.stringify(sorted));
+      return sorted;
     }
-    return JSON.parse(data);
+    return sortInventoryCategoryWise(JSON.parse(data));
   } catch (err) {
     console.error('Failed to load inventory from localStorage', err);
-    return initialInventory;
+    return sortInventoryCategoryWise(initialInventory);
   }
 };
 
 export const saveInventory = (items: Item[]): void => {
   try {
-    localStorage.setItem(STORAGE_KEYS.INVENTORY, JSON.stringify(items));
+    const sorted = sortInventoryCategoryWise(items);
+    localStorage.setItem(STORAGE_KEYS.INVENTORY, JSON.stringify(sorted));
   } catch (err) {
     console.error('Failed to save inventory to localStorage', err);
   }
@@ -114,7 +124,13 @@ export const saveHeldBillsToDB = (bills: HeldBill[]): void => {
 export const getStoredSettings = (): StoreSettings => {
   try {
     const data = localStorage.getItem(STORAGE_KEYS.SETTINGS);
-    return data ? JSON.parse(data) : defaultStoreSettings;
+    if (!data) return defaultStoreSettings;
+    const parsed = JSON.parse(data);
+    if (!parsed.storeName || !parsed.storeName.includes('AMMAN')) {
+      parsed.storeName = 'SRI AMMAN THAIS FIREWORKS & CRACKERS';
+      localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(parsed));
+    }
+    return parsed;
   } catch (err) {
     return defaultStoreSettings;
   }

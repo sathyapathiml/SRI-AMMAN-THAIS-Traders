@@ -10,7 +10,8 @@ import type {
   PaymentMode, 
   DiscountType,
   PriceTier,
-  PettyExpense
+  PettyExpense,
+  User
 } from './types/pos';
 import { 
   getStoredInventory, 
@@ -55,6 +56,25 @@ import { InvoiceHistoryModal } from './components/InvoiceHistoryModal';
 import { SettingsModal } from './components/SettingsModal';
 import { PettyExpensesModal } from './components/PettyExpensesModal';
 import { DayClosingModal } from './components/DayClosingModal';
+import { LoginModal } from './components/LoginModal';
+
+// Default pre-seeded admin profile for sathyapathi555@gmail.com
+const DEFAULT_ADMIN: User = {
+  id: 'user-admin-default',
+  username: 'Sathyapathi (Admin)',
+  email: 'sathyapathi555@gmail.com',
+  role: 'admin',
+  createdAt: new Date().toISOString()
+};
+
+// Default pre-seeded worker profile for cashiers on other PCs
+const DEFAULT_WORKER: User = {
+  id: 'user-worker-default',
+  username: 'Counter Cashier',
+  email: 'cashier@store.com',
+  role: 'worker',
+  createdAt: new Date().toISOString()
+};
 
 export function App() {
   // Data state
@@ -63,6 +83,20 @@ export function App() {
   const [heldBills, setHeldBills] = useState<HeldBill[]>(() => getStoredHeldBills());
   const [settings, setSettings] = useState<StoreSettings>(() => getStoredSettings());
   const [printerConfig, setPrinterConfig] = useState<PrinterConfig>(() => getStoredPrinterConfig());
+
+  // Direct Admin Access on Main System (localhost), Direct Worker Access on Other Counter PCs
+  const [currentUser, setCurrentUser] = useState<User | null>(() => {
+    try {
+      const saved = localStorage.getItem('pos_current_user');
+      if (saved) return JSON.parse(saved);
+      // Main system gets direct Admin access; other LAN/Cloud PCs get direct Worker access
+      const isMainSystem = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+      return isMainSystem ? DEFAULT_ADMIN : DEFAULT_WORKER;
+    } catch {
+      return DEFAULT_ADMIN;
+    }
+  });
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
   // Retail vs Wholesale Mode
   const [priceTier, setPriceTier] = useState<PriceTier>('retail');
@@ -106,6 +140,23 @@ export function App() {
     () => calculateCartTotals(cartItems, overallDiscountValue, overallDiscountType),
     [cartItems, overallDiscountValue, overallDiscountType]
   );
+
+  // Handle Login Success
+  const handleLoginSuccess = (user: User) => {
+    setCurrentUser(user);
+    try {
+      localStorage.setItem('pos_current_user', JSON.stringify(user));
+    } catch {}
+  };
+
+  // Handle Logout
+  const handleLogout = () => {
+    setCurrentUser(null);
+    try {
+      localStorage.removeItem('pos_current_user');
+    } catch {}
+    setIsLoginModalOpen(true);
+  };
 
   // Periodic LAN Server Health & Multi-Counter Sync
   useEffect(() => {
@@ -176,7 +227,8 @@ export function App() {
       }
 
       if (e.key === 'Escape') {
-        if (isReceiptModalOpen) setIsReceiptModalOpen(false);
+        if (isLoginModalOpen) setIsLoginModalOpen(false);
+        else if (isReceiptModalOpen) setIsReceiptModalOpen(false);
         else if (isCheckoutOpen) setIsCheckoutOpen(false);
         else if (isBulkDiscountOpen) setIsBulkDiscountOpen(false);
         else if (isHeldBillsOpen) setIsHeldBillsOpen(false);
@@ -190,7 +242,7 @@ export function App() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [cartItems, isCheckoutOpen, isBulkDiscountOpen, isHeldBillsOpen, isInventoryOpen, isHistoryOpen, isSettingsOpen, isReceiptModalOpen, isPettyExpensesOpen, isDayClosingOpen]);
+  }, [cartItems, isLoginModalOpen, isCheckoutOpen, isBulkDiscountOpen, isHeldBillsOpen, isInventoryOpen, isHistoryOpen, isSettingsOpen, isReceiptModalOpen, isPettyExpensesOpen, isDayClosingOpen]);
 
   // Price Tier Switch Handler
   const handleTogglePriceTier = (newTier: PriceTier) => {
@@ -463,7 +515,8 @@ export function App() {
     const newExp: PettyExpense = {
       ...expData,
       id: `exp-${Date.now()}`,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      staffName: expData.staffName || currentUser?.username || 'Cashier'
     };
     const updated = [newExp, ...expenses];
     setExpenses(updated);
@@ -560,10 +613,13 @@ export function App() {
         lanIp={lanIp}
         priceTier={priceTier}
         onTogglePriceTier={handleTogglePriceTier}
+        currentUser={currentUser}
+        onOpenLoginModal={() => setIsLoginModalOpen(true)}
+        onLogout={handleLogout}
       />
 
       {/* Main Split POS View */}
-      <main className="flex-1 flex flex-col lg:flex-row gap-4 p-4 min-h-0 overflow-hidden">
+      <main className="flex-1 flex flex-col lg:flex-row gap-4 p-2 md:p-4 min-h-0 overflow-y-auto lg:overflow-hidden pb-16 lg:pb-4">
         <BillingTable
           cartItems={cartItems}
           onUpdateQty={handleUpdateQty}
@@ -594,7 +650,38 @@ export function App() {
         />
       </main>
 
+      {/* Floating Sticky Mobile Bottom Checkout Bar */}
+      {cartItems.length > 0 && (
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 p-3 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 z-40 flex items-center justify-between shadow-2xl animate-in slide-in-from-bottom duration-200">
+          <div>
+            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              Total ({totals.totalQty} items)
+            </div>
+            <div className="text-lg font-black font-mono text-cyan-400">
+              ₹{totals.grandTotal.toFixed(2)}
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              setIsEstimateMode(false);
+              setIsCheckoutOpen(true);
+            }}
+            className="py-2.5 px-5 bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-cyan-950 flex items-center gap-2 active:scale-95 transition"
+          >
+            <span>Checkout Now</span>
+            <span>➔</span>
+          </button>
+        </div>
+      )}
+
       {/* Modals & Dialogs */}
+      <LoginModal
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
+        onLoginSuccess={handleLoginSuccess}
+        currentUser={currentUser}
+      />
+
       <CheckoutModal
         isOpen={isCheckoutOpen}
         onClose={() => setIsCheckoutOpen(false)}
@@ -653,6 +740,8 @@ export function App() {
           setCreatedInvoice(inv);
           setIsReceiptModalOpen(true);
         }}
+        currentUser={currentUser}
+        onOpenLoginModal={() => setIsLoginModalOpen(true)}
       />
 
       <SettingsModal
@@ -686,6 +775,8 @@ export function App() {
         expenses={expenses}
         settings={settings}
         printerConfig={printerConfig}
+        currentUser={currentUser}
+        onOpenLoginModal={() => setIsLoginModalOpen(true)}
       />
     </div>
   );

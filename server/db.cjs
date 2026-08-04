@@ -23,7 +23,7 @@ const initialInventory = [
 ];
 
 const defaultStoreSettings = {
-  storeName: 'SRI LAKSHMI FIREWORKS & CRACKERS',
+  storeName: 'SRI AMMAN THAIS FIREWORKS & CRACKERS',
   storeTagline: 'Whole Sale & Retail Crackers Superstore',
   addressLine1: 'Main Market Road, Near Town Clock Tower',
   addressLine2: 'Sivakasi / Chennai, Tamil Nadu - 600001',
@@ -104,6 +104,17 @@ db.serialize(() => {
     )
   `);
 
+  db.run(`
+    CREATE TABLE IF NOT EXISTS users (
+      id TEXT PRIMARY KEY,
+      username TEXT UNIQUE,
+      email TEXT UNIQUE,
+      password TEXT,
+      role TEXT,
+      createdAt TEXT
+    )
+  `);
+
   db.get('SELECT COUNT(*) as count FROM inventory', (err, row) => {
     if (!err && row.count === 0) {
       const stmt = db.prepare(`
@@ -128,6 +139,21 @@ db.serialize(() => {
       db.run('INSERT INTO counter (key, seq) VALUES (?, ?)', ['inv', 100]);
     }
   });
+
+  // Pre-seed default Admin and Worker accounts
+  db.get('SELECT COUNT(*) as count FROM users', (err, row) => {
+    if (!err && row.count === 0) {
+      const stmt = db.prepare(`
+        INSERT INTO users (id, username, email, password, role, createdAt)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `);
+      // Admin account for sathyapathi555@gmail.com
+      stmt.run('user-admin-1', 'Sathyapathi (Admin)', 'sathyapathi555@gmail.com', 'admin123', 'admin', new Date().toISOString());
+      // Worker account for Cashier
+      stmt.run('user-worker-1', 'Cashier One', 'cashier@store.com', 'worker123', 'worker', new Date().toISOString());
+      stmt.finalize();
+    }
+  });
 });
 
 const queryAll = (sql, params = []) => new Promise((resolve, reject) => {
@@ -144,7 +170,7 @@ const runSql = (sql, params = []) => new Promise((resolve, reject) => {
 
 module.exports = {
   getInventory: async () => {
-    const rows = await queryAll('SELECT * FROM inventory ORDER BY itemCode ASC');
+    const rows = await queryAll('SELECT * FROM inventory ORDER BY category ASC, itemCode ASC');
     return rows.map(r => ({ ...r, isGstApplicable: Boolean(r.isGstApplicable) }));
   },
 
@@ -264,5 +290,27 @@ module.exports = {
 
   saveSettings: async (settings) => {
     await runSql('INSERT INTO settings (key, value) VALUES ("store", ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value', [JSON.stringify(settings)]);
+  },
+
+  // Auth & User Management Methods
+  findUserByEmail: async (email) => {
+    return await queryGet('SELECT * FROM users WHERE LOWER(email) = LOWER(?)', [email]);
+  },
+
+  findUserByUsername: async (username) => {
+    return await queryGet('SELECT * FROM users WHERE LOWER(username) = LOWER(?)', [username]);
+  },
+
+  createUser: async (user) => {
+    await runSql(`
+      INSERT INTO users (id, username, email, password, role, createdAt)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `, [user.id, user.username, user.email, user.password, user.role, user.createdAt]);
+    return user;
+  },
+
+  getUsers: async () => {
+    const rows = await queryAll('SELECT id, username, email, role, createdAt FROM users ORDER BY createdAt DESC');
+    return rows;
   }
 };
