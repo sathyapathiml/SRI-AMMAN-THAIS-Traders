@@ -92,6 +92,26 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
     }
   }, [query, inventory]);
 
+  const searchContainerRef = React.useRef<HTMLDivElement>(null);
+
+  // Close search panel on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [isOpen]);
+
   // Auto-scroll selected item into view when navigating with Arrow Up / Arrow Down
   useEffect(() => {
     if (isOpen && itemRefs.current[selectedIndex]) {
@@ -187,7 +207,7 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
       </div>
 
       {/* Center: Global Touch & Keyboard Search Bar */}
-      <div className="relative flex-1 max-w-xl">
+      <div className="relative flex-1 max-w-xl" ref={searchContainerRef}>
         <div className="relative flex items-center">
           <Search className="w-4 h-4 md:w-5 md:h-5 absolute left-3 text-slate-400 pointer-events-none" />
           <input
