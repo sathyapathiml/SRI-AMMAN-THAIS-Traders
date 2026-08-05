@@ -177,6 +177,7 @@ export function App() {
         const lanInvs = await fetchLanInvoices();
         if (lanInvs) {
           setInvoices(lanInvs);
+          localStorage.setItem('crackers_pos_invoices_v1', JSON.stringify(lanInvs));
         }
 
         const lanExps = await fetchLanExpenses();
@@ -592,17 +593,17 @@ export function App() {
   };
 
   const handleResetInvoices = async () => {
+    // 1. ALWAYS wipe browser local storage immediately
+    const cleared = resetStoredInvoices();
+    setInvoices(cleared);
+
+    // 2. Clear backend LAN database if server is connected
     if (lanConnected) {
       const res = await resetLanInvoices();
       if (res) {
         setInvoices(res);
-      } else {
-        const cleared = resetStoredInvoices();
-        setInvoices(cleared);
+        localStorage.setItem('crackers_pos_invoices_v1', JSON.stringify(res));
       }
-    } else {
-      const cleared = resetStoredInvoices();
-      setInvoices(cleared);
     }
   };
 
