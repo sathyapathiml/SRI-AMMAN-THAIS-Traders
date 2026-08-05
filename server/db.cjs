@@ -23,7 +23,7 @@ const initialInventory = [
 ];
 
 const defaultStoreSettings = {
-  storeName: 'SRI AMMAN THAIS FIREWORKS & CRACKERS',
+  storeName: 'SRI AMMAN THAIS Traders',
   storeTagline: 'Whole Sale & Retail Crackers Superstore',
   addressLine1: 'Main Market Road, Near Town Clock Tower',
   addressLine2: 'Sivakasi / Chennai, Tamil Nadu - 600001',

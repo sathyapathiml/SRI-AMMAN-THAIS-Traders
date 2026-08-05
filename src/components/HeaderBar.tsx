@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { Item, PriceTier, User } from '../types/pos';
+import { LOGO_DATA_URI } from '../data/logoDataUri';
 import { 
   Search, 
   Package, 
@@ -7,13 +8,16 @@ import {
   Settings as SettingsIcon, 
   PauseCircle, 
   RotateCcw,
-  Sparkles,
+  User as UserIcon,
+  LogOut,
+  ChevronDown,
+  DollarSign,
+  Monitor,
+  Calendar,
   Wallet,
-  Calculator,
   ShieldCheck,
   UserCheck,
-  User as UserIcon,
-  LogOut
+  Calculator
 } from 'lucide-react';
 
 interface HeaderBarProps {
@@ -32,7 +36,7 @@ interface HeaderBarProps {
   printMode: 'serial' | 'browser';
   searchInputRef: React.RefObject<HTMLInputElement | null>;
   lanConnected: boolean;
-  lanIp?: string;
+  lanIp: string;
   priceTier: PriceTier;
   onTogglePriceTier: (tier: PriceTier) => void;
   currentUser: User | null;
@@ -136,13 +140,16 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
       <div className="flex items-center justify-between gap-2">
         {/* Brand & Store Logo */}
         <div className="flex items-center gap-2.5 shrink-0">
-          <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-gradient-to-tr from-amber-500 via-rose-500 to-red-600 flex items-center justify-center shadow-md">
-            <Sparkles className="w-4 h-4 md:w-6 md:h-6 text-white animate-pulse" />
-          </div>
+          <img
+            src={LOGO_DATA_URI}
+            alt="SRI AMMAN THAIS Traders Logo"
+            className="w-10 h-10 md:w-12 md:h-12 rounded-xl object-contain shadow-lg border border-amber-500/40 bg-slate-950 p-0.5"
+          />
           <div>
             <div className="flex items-center gap-1.5">
-              <h1 className="text-sm md:text-lg font-extrabold tracking-tight text-slate-100 flex items-center gap-1">
-                CRACKERS POS <span className="text-[10px] md:text-xs px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-300 font-semibold border border-amber-500/30">v3.0</span>
+              <h1 className="text-sm md:text-lg font-black tracking-tight text-white flex items-center gap-1">
+                SRI AMMAN THAIS <span className="text-amber-400">Traders</span>
+                <span className="text-[10px] md:text-xs px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">v3.0</span>
               </h1>
               {lanConnected ? (
                 <span className="text-[9px] md:text-[10px] px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 font-mono font-bold border border-emerald-500/30 flex items-center gap-1">
@@ -155,7 +162,7 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
                 </span>
               )}
             </div>
-            <p className="hidden sm:block text-xs text-slate-400 font-medium">Fast Multi-Counter POS</p>
+            <p className="hidden sm:block text-xs text-amber-300/80 font-semibold tracking-wide">Whole Sale & Retail Crackers Superstore</p>
           </div>
         </div>
 

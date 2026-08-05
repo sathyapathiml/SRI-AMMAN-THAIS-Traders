@@ -11,7 +11,7 @@ const STORAGE_KEYS = {
 };
 
 export const defaultStoreSettings: StoreSettings = {
-  storeName: 'SRI AMMAN THAIS FIREWORKS & CRACKERS',
+  storeName: 'SRI AMMAN THAIS Traders',
   storeTagline: 'Whole Sale & Retail Crackers Superstore',
   addressLine1: 'Main Market Road, Near Town Clock Tower',
   addressLine2: 'Sivakasi / Chennai, Tamil Nadu - 600001',
@@ -137,8 +137,8 @@ export const getStoredSettings = (): StoreSettings => {
     const data = localStorage.getItem(STORAGE_KEYS.SETTINGS);
     if (!data) return defaultStoreSettings;
     const parsed = JSON.parse(data);
-    if (!parsed.storeName || !parsed.storeName.includes('AMMAN')) {
-      parsed.storeName = 'SRI AMMAN THAIS FIREWORKS & CRACKERS';
+    if (!parsed.storeName || parsed.storeName !== 'SRI AMMAN THAIS Traders') {
+      parsed.storeName = 'SRI AMMAN THAIS Traders';
       localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(parsed));
     }
     return parsed;

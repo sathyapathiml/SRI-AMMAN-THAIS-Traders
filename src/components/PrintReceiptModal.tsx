@@ -1,7 +1,7 @@
 import React from 'react';
 import type { Invoice, StoreSettings } from '../types/pos';
 import { Printer, X, Sparkles } from 'lucide-react';
-import { STORE_LOGO_DATA_URI } from '../data/logoDataUri';
+import { LOGO_DATA_URI } from '../data/logoDataUri';
 
 interface PrintReceiptModalProps {
   invoice: Invoice | null;
@@ -47,7 +47,7 @@ export const PrintReceiptModal: React.FC<PrintReceiptModalProps> = ({
               <div className="text-center space-y-0.5 border-b border-slate-300 pb-2">
                 <div className="flex justify-center mb-2">
                   <img
-                    src={STORE_LOGO_DATA_URI}
+                    src={LOGO_DATA_URI}
                     alt="SRI AMMAN THAIS Logo"
                     className="w-28 h-28 object-contain mx-auto"
                   />
@@ -184,7 +184,7 @@ export const PrintReceiptModal: React.FC<PrintReceiptModalProps> = ({
         <div className="text-center pb-2">
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '6px' }}>
             <img
-              src={STORE_LOGO_DATA_URI}
+              src={LOGO_DATA_URI}
               alt="SRI AMMAN THAIS Logo"
               style={{ width: '90px', height: '90px', objectFit: 'contain', margin: '0 auto' }}
             />
