@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { StoreSettings, PrinterConfig } from '../types/pos';
+import type { StoreSettings, PrinterConfig, User } from '../types/pos';
 import { Settings as SettingsIcon, Printer, Store, Save, X, Cpu, CheckCircle } from 'lucide-react';
 import { requestSerialPort, isWebSerialSupported, testSerialPrint } from '../services/serialPrinter';
 
@@ -10,6 +10,7 @@ interface SettingsModalProps {
   onSaveSettings: (settings: StoreSettings) => void;
   printerConfig: PrinterConfig;
   onSavePrinterConfig: (config: PrinterConfig) => void;
+  currentUser?: User | null;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -18,7 +19,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   settings,
   onSaveSettings,
   printerConfig,
-  onSavePrinterConfig
+  onSavePrinterConfig,
+  currentUser
 }) => {
   const [storeForm, setStoreForm] = useState<StoreSettings>(settings);
   const [printerForm, setPrinterForm] = useState<PrinterConfig>(printerConfig);
@@ -27,9 +29,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   if (!isOpen) return null;
 
+  const isAdmin = currentUser?.role === 'admin';
+
   const handleSaveAll = (e: React.FormEvent) => {
     e.preventDefault();
-    onSaveSettings(storeForm);
+    if (isAdmin) {
+      onSaveSettings(storeForm);
+    } else {
+      // Workers can only update their local counter number
+      onSaveSettings({
+        ...settings,
+        counterNo: storeForm.counterNo || 'Counter 1'
+      });
+    }
     onSavePrinterConfig(printerForm);
     setStatusMsg('Settings saved successfully!');
     setTimeout(() => {
@@ -120,9 +132,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <input
                   type="text"
                   required
+                  disabled={!isAdmin}
                   value={storeForm.storeName}
                   onChange={(e) => setStoreForm({ ...storeForm, storeName: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-700 focus:border-cyan-500 rounded-xl p-2.5 font-bold text-white outline-none"
+                  className="w-full bg-slate-950 border border-slate-700 focus:border-cyan-500 rounded-xl p-2.5 font-bold text-white outline-none disabled:opacity-60"
                 />
               </div>
 
@@ -130,9 +143,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <label className="block font-bold text-slate-400 mb-1">Tagline / Subtitle</label>
                 <input
                   type="text"
+                  disabled={!isAdmin}
                   value={storeForm.storeTagline}
                   onChange={(e) => setStoreForm({ ...storeForm, storeTagline: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-700 focus:border-cyan-500 rounded-xl p-2.5 text-slate-200 outline-none"
+                  className="w-full bg-slate-950 border border-slate-700 focus:border-cyan-500 rounded-xl p-2.5 text-slate-200 outline-none disabled:opacity-60"
                 />
               </div>
 
@@ -141,18 +155,20 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <label className="block font-bold text-slate-400 mb-1">Address Line 1</label>
                   <input
                     type="text"
+                    disabled={!isAdmin}
                     value={storeForm.addressLine1}
                     onChange={(e) => setStoreForm({ ...storeForm, addressLine1: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-700 focus:border-cyan-500 rounded-xl p-2.5 text-white outline-none"
+                    className="w-full bg-slate-950 border border-slate-700 focus:border-cyan-500 rounded-xl p-2.5 text-white outline-none disabled:opacity-60"
                   />
                 </div>
                 <div>
                   <label className="block font-bold text-slate-400 mb-1">Address Line 2 / City</label>
                   <input
                     type="text"
+                    disabled={!isAdmin}
                     value={storeForm.addressLine2}
                     onChange={(e) => setStoreForm({ ...storeForm, addressLine2: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-700 focus:border-cyan-500 rounded-xl p-2.5 text-white outline-none"
+                    className="w-full bg-slate-950 border border-slate-700 focus:border-cyan-500 rounded-xl p-2.5 text-white outline-none disabled:opacity-60"
                   />
                 </div>
               </div>
@@ -162,18 +178,20 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <label className="block font-bold text-slate-400 mb-1">Phone Number(s)</label>
                   <input
                     type="text"
+                    disabled={!isAdmin}
                     value={storeForm.phone}
                     onChange={(e) => setStoreForm({ ...storeForm, phone: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-700 focus:border-cyan-500 rounded-xl p-2.5 text-white outline-none font-mono"
+                    className="w-full bg-slate-950 border border-slate-700 focus:border-cyan-500 rounded-xl p-2.5 text-white outline-none font-mono disabled:opacity-60"
                   />
                 </div>
                 <div>
                   <label className="block font-bold text-slate-400 mb-1">GSTIN Number</label>
                   <input
                     type="text"
+                    disabled={!isAdmin}
                     value={storeForm.gstin}
                     onChange={(e) => setStoreForm({ ...storeForm, gstin: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-700 focus:border-cyan-500 rounded-xl p-2.5 text-amber-300 outline-none font-mono uppercase"
+                    className="w-full bg-slate-950 border border-slate-700 focus:border-cyan-500 rounded-xl p-2.5 text-amber-300 outline-none font-mono uppercase disabled:opacity-60"
                   />
                 </div>
               </div>
@@ -183,9 +201,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <label className="block font-bold text-slate-400 mb-1">Invoice Prefix</label>
                   <input
                     type="text"
+                    disabled={!isAdmin}
                     value={storeForm.invoicePrefix}
                     onChange={(e) => setStoreForm({ ...storeForm, invoicePrefix: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-700 focus:border-cyan-500 rounded-xl p-2.5 text-cyan-300 outline-none font-mono"
+                    className="w-full bg-slate-950 border border-slate-700 focus:border-cyan-500 rounded-xl p-2.5 text-cyan-300 outline-none font-mono disabled:opacity-60"
                   />
                 </div>
                 <div>
@@ -205,9 +224,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <label className="block font-bold text-slate-400 mb-1">Receipt Footer Message</label>
                 <input
                   type="text"
+                  disabled={!isAdmin}
                   value={storeForm.receiptFooterNote}
                   onChange={(e) => setStoreForm({ ...storeForm, receiptFooterNote: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-700 focus:border-cyan-500 rounded-xl p-2.5 text-white outline-none"
+                  className="w-full bg-slate-950 border border-slate-700 focus:border-cyan-500 rounded-xl p-2.5 text-white outline-none disabled:opacity-60"
                 />
               </div>
             </div>

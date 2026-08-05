@@ -730,6 +730,7 @@ export function App() {
         onDeleteItem={handleDeleteItem}
         onResetInventory={handleResetInventory}
         onImportInventory={handleImportInventory}
+        currentUser={currentUser}
       />
 
       <InvoiceHistoryModal
@@ -759,6 +760,7 @@ export function App() {
           setPrinterConfig(c);
           savePrinterConfigToDB(c);
         }}
+        currentUser={currentUser}
       />
 
       <PettyExpensesModal

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { Item, DiscountType } from '../types/pos';
+import type { Item, DiscountType, User } from '../types/pos';
 import { Package, Plus, Search, Download, Upload, RotateCcw, X, Edit, Trash2, Save, CheckSquare, Square, Layers, Percent, DollarSign, ArrowUpRight, ArrowDownRight, Tag, ShieldCheck } from 'lucide-react';
 
 interface InventoryModalProps {
@@ -10,6 +10,7 @@ interface InventoryModalProps {
   onDeleteItem: (id: string) => void;
   onResetInventory: () => void;
   onImportInventory: (items: Item[]) => void;
+  currentUser?: User | null;
 }
 
 type BulkActionType = 'price' | 'stock' | 'category' | 'discount' | 'gst' | null;
@@ -21,12 +22,15 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
   onSaveItem,
   onDeleteItem,
   onResetInventory,
-  onImportInventory
+  onImportInventory,
+  currentUser
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [editingItem, setEditingItem] = useState<Item | null>(null);
   const [isAddingNew, setIsAddingNew] = useState(false);
+
+  const isAdmin = currentUser?.role === 'admin';
 
   // Bulk Selection & Editing State
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -292,32 +296,36 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Toggle Inline Table Multi-Row Edit Mode */}
-            <button
-              onClick={() => {
-                if (isMultiInlineMode) {
-                  handleSaveAllInlineChanges();
-                } else {
-                  setIsMultiInlineMode(true);
-                }
-              }}
-              className={`py-1.5 px-3 rounded-xl font-bold text-xs flex items-center gap-1.5 transition ${
-                isMultiInlineMode
-                  ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-lg'
-                  : 'bg-purple-950/60 hover:bg-purple-900/80 border border-purple-800/80 text-purple-300'
-              }`}
-            >
-              {isMultiInlineMode ? <Save className="w-3.5 h-3.5" /> : <Edit className="w-3.5 h-3.5 text-purple-400" />}
-              <span>{isMultiInlineMode ? 'Save All Table Changes' : 'Fast Multi-Row Table Edit'}</span>
-            </button>
+            {isAdmin && (
+              <>
+                {/* Toggle Inline Table Multi-Row Edit Mode */}
+                <button
+                  onClick={() => {
+                    if (isMultiInlineMode) {
+                      handleSaveAllInlineChanges();
+                    } else {
+                      setIsMultiInlineMode(true);
+                    }
+                  }}
+                  className={`py-1.5 px-3 rounded-xl font-bold text-xs flex items-center gap-1.5 transition ${
+                    isMultiInlineMode
+                      ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-lg'
+                      : 'bg-purple-950/60 hover:bg-purple-900/80 border border-purple-800/80 text-purple-300'
+                  }`}
+                >
+                  {isMultiInlineMode ? <Save className="w-3.5 h-3.5" /> : <Edit className="w-3.5 h-3.5 text-purple-400" />}
+                  <span>{isMultiInlineMode ? 'Save All Table Changes' : 'Fast Multi-Row Table Edit'}</span>
+                </button>
 
-            <button
-              onClick={handleCreateNew}
-              className="py-1.5 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs flex items-center gap-1 shadow transition"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Add Cracker Item</span>
-            </button>
+                <button
+                  onClick={handleCreateNew}
+                  className="py-1.5 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs flex items-center gap-1 shadow transition"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Add Cracker Item</span>
+                </button>
+              </>
+            )}
 
             <button
               onClick={handleExportCSV}
@@ -830,25 +838,29 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
 
                       {/* Actions */}
                       <td className="py-2 px-3 text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          <button
-                            onClick={() => {
-                              setEditingItem(item);
-                              setIsAddingNew(false);
-                            }}
-                            className="p-1 rounded text-slate-400 hover:text-cyan-400 hover:bg-slate-800"
-                            title="Single Edit"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => onDeleteItem(item.id)}
-                            className="p-1 rounded text-slate-400 hover:text-rose-400 hover:bg-slate-800"
-                            title="Delete Item"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
+                        {isAdmin ? (
+                          <div className="flex items-center justify-center gap-1">
+                            <button
+                              onClick={() => {
+                                setEditingItem(item);
+                                setIsAddingNew(false);
+                              }}
+                              className="p-1 rounded text-slate-400 hover:text-cyan-400 hover:bg-slate-800"
+                              title="Single Edit"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => onDeleteItem(item.id)}
+                              className="p-1 rounded text-slate-400 hover:text-rose-400 hover:bg-slate-800"
+                              title="Delete Item"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-slate-600 font-mono text-[10px]">-</span>
+                        )}
                       </td>
                     </tr>
                   </React.Fragment>
