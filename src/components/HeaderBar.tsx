@@ -194,7 +194,7 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
 
         {/* Auto-complete Dropdown */}
         {isOpen && results.length > 0 && (
-          <div className="absolute left-0 right-0 top-full mt-1 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl overflow-hidden z-50 divide-y divide-slate-800/60 max-h-72 overflow-y-auto">
+          <div className="absolute left-0 right-0 md:-left-4 md:-right-4 top-full mt-1 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl overflow-hidden z-50 divide-y divide-slate-800/60 max-h-80 overflow-y-auto">
             {results.map((item, idx) => {
               const displayPrice = (priceTier === 'wholesale' && item.wholesalePrice && item.wholesalePrice > 0) ? item.wholesalePrice : item.mrp;
               return (
@@ -202,23 +202,31 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
                   key={item.id}
                   ref={(el) => { itemRefs.current[idx] = el; }}
                   onClick={() => handleSelect(item)}
-                  className={`px-3 py-2.5 cursor-pointer flex items-center justify-between transition-colors ${
+                  className={`px-3 py-2.5 cursor-pointer flex items-start justify-between gap-3 transition-colors ${
                     idx === selectedIndex ? 'bg-cyan-950/80 border-l-4 border-cyan-400 text-white' : 'hover:bg-slate-800/60 text-slate-200'
                   }`}
                 >
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 bg-slate-800 rounded text-amber-400 border border-slate-700">
+                  <div className="flex items-start gap-2.5 flex-1 min-w-0">
+                    <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 bg-slate-800 rounded text-amber-400 border border-slate-700 shrink-0 mt-0.5">
                       {item.itemCode}
                     </span>
-                    <div>
-                      <div className="font-semibold text-xs text-slate-100 line-clamp-1">{item.itemName}</div>
-                      <div className="text-[10px] text-slate-400">{item.category} • Stock: <span className={item.stockQty < 10 ? 'text-red-400 font-bold' : 'text-emerald-400'}>{item.stockQty}</span></div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-bold text-xs md:text-sm text-slate-100 whitespace-normal break-words leading-snug">
+                        {item.itemName}
+                      </div>
+                      <div className="text-[10px] text-slate-400 mt-0.5 flex items-center gap-2 flex-wrap">
+                        <span className="bg-slate-800 px-1.5 py-0.2 rounded text-slate-300 font-semibold">{item.category}</span>
+                        <span>Stock: <strong className={item.stockQty < 10 ? 'text-red-400' : 'text-emerald-400'}>{item.stockQty}</strong></span>
+                      </div>
                     </div>
                   </div>
-                  <div className="text-right shrink-0">
-                    <div className="text-xs md:text-sm font-extrabold text-amber-400">
+                  <div className="text-right shrink-0 pt-0.5">
+                    <div className="text-xs md:text-sm font-black text-amber-400">
                       ₹{displayPrice}
                     </div>
+                    {item.wholesalePrice && item.wholesalePrice > 0 && priceTier === 'retail' && (
+                      <div className="text-[9px] text-slate-500 font-mono">WS: ₹{item.wholesalePrice}</div>
+                    )}
                   </div>
                 </div>
               );
