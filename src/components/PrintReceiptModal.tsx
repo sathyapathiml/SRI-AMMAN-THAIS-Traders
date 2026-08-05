@@ -67,7 +67,7 @@ export const PrintReceiptModal: React.FC<PrintReceiptModalProps> = ({
                   <span>{new Date(invoice.createdAt).toLocaleDateString()}</span>
                 </div>
                 <div className="flex justify-between text-slate-700">
-                  <span>Mode: {invoice.paymentMode}</span>
+                  <span>Mode: {invoice.paymentMode} ({invoice.counterNo || settings.counterNo || 'Counter 1'})</span>
                   <span>{new Date(invoice.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                 </div>
                 {invoice.customerName && (
@@ -202,7 +202,7 @@ export const PrintReceiptModal: React.FC<PrintReceiptModalProps> = ({
           <span>{new Date(invoice.createdAt).toLocaleDateString()}</span>
         </div>
         <div className="flex justify-between">
-          <span>Pay: {invoice.paymentMode}</span>
+          <span>Pay: {invoice.paymentMode} ({invoice.counterNo || settings.counterNo || 'Counter 1'})</span>
           <span>{new Date(invoice.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
         </div>
         {invoice.customerName && <div>Cust: {invoice.customerName} {invoice.customerPhone ? `(${invoice.customerPhone})` : ''}</div>}

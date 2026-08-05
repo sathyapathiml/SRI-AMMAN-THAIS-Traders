@@ -67,6 +67,7 @@ export interface Invoice {
   id: string;
   invoiceNo: string;
   createdAt: string; // ISO String
+  counterNo?: string; // e.g. "Counter 1", "Counter 2"
   customerName?: string;
   customerPhone?: string;
   items: CartLineItem[];
@@ -106,6 +107,7 @@ export interface StoreSettings {
   invoicePrefix: string;
   receiptFooterNote: string;
   openingCashDrawer?: number;
+  counterNo?: string; // Counter Identifier e.g. "Counter 1"
 }
 
 export interface PrinterConfig {

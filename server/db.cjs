@@ -54,6 +54,7 @@ db.serialize(() => {
       id TEXT PRIMARY KEY,
       invoiceNo TEXT UNIQUE,
       createdAt TEXT,
+      counterNo TEXT,
       customerName TEXT,
       customerPhone TEXT,
       items TEXT,
@@ -69,6 +70,11 @@ db.serialize(() => {
       changeReturned REAL
     )
   `);
+
+  // Safely add counterNo column to existing SQLite database if missing
+  db.run('ALTER TABLE invoices ADD COLUMN counterNo TEXT', (err) => {
+    // Ignore error if column already exists
+  });
 
   db.run(`
     CREATE TABLE IF NOT EXISTS held_bills (
@@ -226,14 +232,15 @@ module.exports = {
       const invoice = {
         ...invoiceData,
         invoiceNo,
-        createdAt: invoiceData.createdAt || new Date().toISOString()
+        createdAt: invoiceData.createdAt || new Date().toISOString(),
+        counterNo: invoiceData.counterNo || 'Counter 1'
       };
 
       await runSql(`
-        INSERT INTO invoices (id, invoiceNo, createdAt, customerName, customerPhone, items, subtotalMRP, totalDiscount, taxableAmount, totalCGST, totalSGST, totalGST, grandTotal, paymentMode, cashTendered, changeReturned)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO invoices (id, invoiceNo, createdAt, counterNo, customerName, customerPhone, items, subtotalMRP, totalDiscount, taxableAmount, totalCGST, totalSGST, totalGST, grandTotal, paymentMode, cashTendered, changeReturned)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `, [
-        invoice.id, invoice.invoiceNo, invoice.createdAt, invoice.customerName || null, invoice.customerPhone || null,
+        invoice.id, invoice.invoiceNo, invoice.createdAt, invoice.counterNo, invoice.customerName || null, invoice.customerPhone || null,
         JSON.stringify(invoice.items), invoice.subtotalMRP, invoice.totalDiscount, invoice.taxableAmount,
         invoice.totalCGST, invoice.totalSGST, invoice.totalGST, invoice.grandTotal, invoice.paymentMode,
         invoice.cashTendered || null, invoice.changeReturned || null

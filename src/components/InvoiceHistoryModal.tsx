@@ -16,25 +16,46 @@ export const InvoiceHistoryModal: React.FC<InvoiceHistoryModalProps> = ({
   isOpen,
   onClose,
   invoices,
+  settings,
   onSelectInvoiceToPrint,
   currentUser
 }) => {
   const [query, setQuery] = useState('');
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [counterFilter, setCounterFilter] = useState<string>('ALL');
 
   if (!isOpen) return null;
 
   const isAdmin = currentUser?.role === 'admin';
+  const activeCounter = settings.counterNo || 'Counter 1';
 
-  const filteredInvoices = invoices.filter(inv => {
+  // Worker view: ONLY show bills belonging to the worker's current active counter!
+  // Admin view: Show ALL bills, with optional counter filter dropdown
+  const accessibleInvoices = invoices.filter(inv => {
+    const invCounter = inv.counterNo || 'Counter 1';
+    if (!isAdmin) {
+      return invCounter === activeCounter;
+    }
+    if (counterFilter !== 'ALL') {
+      return invCounter === counterFilter;
+    }
+    return true;
+  });
+
+  const filteredInvoices = accessibleInvoices.filter(inv => {
     const term = query.toLowerCase().trim();
+    const invCounter = (inv.counterNo || 'Counter 1').toLowerCase();
     return (
       inv.invoiceNo.toLowerCase().includes(term) ||
+      invCounter.includes(term) ||
       (inv.customerName && inv.customerName.toLowerCase().includes(term)) ||
       (inv.customerPhone && inv.customerPhone.includes(term)) ||
       inv.paymentMode.toLowerCase().includes(term)
     );
   });
+
+  // Extract unique counter names for Admin filter dropdown
+  const availableCounters = Array.from(new Set(invoices.map(i => i.counterNo || 'Counter 1'))).sort();
 
   // Calculate Sales Summary Statistics (Admin Only)
   const totalRevenue = invoices.reduce((acc, i) => acc + i.grandTotal, 0);
@@ -53,8 +74,13 @@ export const InvoiceHistoryModal: React.FC<InvoiceHistoryModalProps> = ({
             <History className="w-5 h-5 text-purple-400" />
             <h3 className="font-bold text-slate-100 text-base">Invoice History & Receipt Reprinting</h3>
             <span className="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">
-              {invoices.length} Bills Total
+              {filteredInvoices.length} {isAdmin ? 'Total Bills' : `${activeCounter} Bills`}
             </span>
+            {!isAdmin && (
+              <span className="text-xs px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">
+                🖥️ {activeCounter}
+              </span>
+            )}
           </div>
           <button onClick={onClose} className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800">
             <X className="w-5 h-5" />
@@ -92,17 +118,36 @@ export const InvoiceHistoryModal: React.FC<InvoiceHistoryModalProps> = ({
         )}
 
         {/* Filter Bar */}
-        <div className="p-3 bg-slate-900 border-b border-slate-800 shrink-0">
-          <div className="relative max-w-md">
+        <div className="p-3 bg-slate-900 border-b border-slate-800 flex items-center gap-3 shrink-0">
+          <div className="relative flex-1 max-w-md">
             <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-500" />
             <input
               type="text"
-              placeholder="Search Invoice #, Customer Name, Phone..."
+              placeholder="Search Invoice #, Counter, Customer Name, Phone..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               className="w-full bg-slate-950 border border-slate-700 focus:border-purple-500 rounded-xl pl-9 pr-3 py-1.5 text-xs text-white outline-none"
             />
           </div>
+
+          {/* Admin Counter Filter Dropdown */}
+          {isAdmin && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-slate-400 hidden sm:inline">Filter Counter:</span>
+              <select
+                value={counterFilter}
+                onChange={(e) => setCounterFilter(e.target.value)}
+                className="bg-slate-950 border border-amber-500/40 text-amber-300 font-bold text-xs rounded-xl px-3 py-1.5 outline-none"
+              >
+                <option value="ALL">All Counters ({invoices.length})</option>
+                {availableCounters.map(counter => (
+                  <option key={counter} value={counter}>
+                    {counter} ({invoices.filter(i => (i.counterNo || 'Counter 1') === counter).length} bills)
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
 
         {/* Content Split: Invoice List & Inspector */}
@@ -123,7 +168,12 @@ export const InvoiceHistoryModal: React.FC<InvoiceHistoryModalProps> = ({
                   }`}
                 >
                   <div className="flex justify-between items-center">
-                    <span className="font-mono font-extrabold text-xs text-amber-400">{inv.invoiceNo}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-extrabold text-xs text-amber-400">{inv.invoiceNo}</span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-900 text-amber-300 border border-amber-500/30">
+                        🖥️ {inv.counterNo || 'Counter 1'}
+                      </span>
+                    </div>
                     <span className="text-[10px] text-slate-500 font-mono">
                       {new Date(inv.createdAt).toLocaleString()}
                     </span>
@@ -145,7 +195,12 @@ export const InvoiceHistoryModal: React.FC<InvoiceHistoryModalProps> = ({
               <div className="space-y-4">
                 <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                   <div>
-                    <h4 className="font-black text-base text-amber-400 font-mono">{selectedInvoice.invoiceNo}</h4>
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-black text-base text-amber-400 font-mono">{selectedInvoice.invoiceNo}</h4>
+                      <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                        🖥️ {selectedInvoice.counterNo || 'Counter 1'}
+                      </span>
+                    </div>
                     <p className="text-xs text-slate-400">{new Date(selectedInvoice.createdAt).toLocaleString()}</p>
                   </div>
                   <button

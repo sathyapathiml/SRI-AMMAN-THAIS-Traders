@@ -189,14 +189,26 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-400 mb-1">Receipt Footer Message</label>
+                  <label className="block font-bold text-amber-400 mb-1">Counter Name / Number *</label>
                   <input
                     type="text"
-                    value={storeForm.receiptFooterNote}
-                    onChange={(e) => setStoreForm({ ...storeForm, receiptFooterNote: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-700 focus:border-cyan-500 rounded-xl p-2.5 text-white outline-none"
+                    required
+                    placeholder="e.g. Counter 1, Counter 2"
+                    value={storeForm.counterNo || 'Counter 1'}
+                    onChange={(e) => setStoreForm({ ...storeForm, counterNo: e.target.value })}
+                    className="w-full bg-slate-950 border border-amber-500/50 focus:border-amber-400 rounded-xl p-2.5 text-amber-300 font-bold outline-none"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-400 mb-1">Receipt Footer Message</label>
+                <input
+                  type="text"
+                  value={storeForm.receiptFooterNote}
+                  onChange={(e) => setStoreForm({ ...storeForm, receiptFooterNote: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-700 focus:border-cyan-500 rounded-xl p-2.5 text-white outline-none"
+                />
               </div>
             </div>
           ) : (

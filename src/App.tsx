@@ -439,6 +439,7 @@ export function App() {
     const draftInvoice: Partial<Invoice> = {
       id: `inv-${Date.now()}`,
       createdAt: new Date().toISOString(),
+      counterNo: settings.counterNo || 'Counter 1',
       customerName: customerName || undefined,
       customerPhone: customerPhone || undefined,
       items: cartItems,
