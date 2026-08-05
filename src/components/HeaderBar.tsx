@@ -64,6 +64,7 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
   const [results, setResults] = useState<Item[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
+  const itemRefs = React.useRef<(HTMLDivElement | null)[]>([]);
 
   // Filter items matching itemCode or itemName via case-insensitive regex
   useEffect(() => {
@@ -78,13 +79,23 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
       const matched = inventory.filter(
         item => regex.test(item.itemCode) || regex.test(item.itemName) || regex.test(item.category)
       );
-      setResults(matched.slice(0, 10)); // Top 10 matches
+      setResults(matched.slice(0, 50)); // Up to 50 matches
       setSelectedIndex(0);
       setIsOpen(true);
     } catch {
       setResults([]);
     }
   }, [query, inventory]);
+
+  // Auto-scroll selected item into view when navigating with Arrow Up / Arrow Down
+  useEffect(() => {
+    if (isOpen && itemRefs.current[selectedIndex]) {
+      itemRefs.current[selectedIndex]?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest'
+      });
+    }
+  }, [selectedIndex, isOpen]);
 
   const handleSelect = (item: Item) => {
     onSelectItem(item);
@@ -189,6 +200,7 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
               return (
                 <div
                   key={item.id}
+                  ref={(el) => { itemRefs.current[idx] = el; }}
                   onClick={() => handleSelect(item)}
                   className={`px-3 py-2.5 cursor-pointer flex items-center justify-between transition-colors ${
                     idx === selectedIndex ? 'bg-cyan-950/80 border-l-4 border-cyan-400 text-white' : 'hover:bg-slate-800/60 text-slate-200'

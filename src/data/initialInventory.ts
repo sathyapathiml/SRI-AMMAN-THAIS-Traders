@@ -3,7 +3,7 @@ import type { Item } from '../types/pos';
 export const initialInventory: Item[] = [
   {
     id: '1',
-    itemCode: 'CRK001',
+    itemCode: 'SPK001',
     itemName: '10cm Electric Sparklers (10s)',
     category: 'Sparklers',
     mrp: 80,
@@ -16,7 +16,7 @@ export const initialInventory: Item[] = [
   },
   {
     id: '2',
-    itemCode: 'CRK002',
+    itemCode: 'SPK002',
     itemName: '30cm Deluxe Multi-Color Sparklers (10s)',
     category: 'Sparklers',
     mrp: 220,
@@ -29,7 +29,7 @@ export const initialInventory: Item[] = [
   },
   {
     id: '3',
-    itemCode: 'CRK003',
+    itemCode: 'SPK003',
     itemName: '50cm Crackling Sparklers Giant (5s)',
     category: 'Sparklers',
     mrp: 350,
@@ -42,7 +42,7 @@ export const initialInventory: Item[] = [
   },
   {
     id: '4',
-    itemCode: 'CRK004',
+    itemCode: 'FNT001',
     itemName: 'Special Flower Pots - Big (10s)',
     category: 'Fountains',
     mrp: 450,
@@ -55,7 +55,7 @@ export const initialInventory: Item[] = [
   },
   {
     id: '5',
-    itemCode: 'CRK005',
+    itemCode: 'FNT002',
     itemName: 'Color Koti Fountain Gold (5s)',
     category: 'Fountains',
     mrp: 320,
@@ -68,7 +68,7 @@ export const initialInventory: Item[] = [
   },
   {
     id: '6',
-    itemCode: 'CRK006',
+    itemCode: 'CHK001',
     itemName: 'Giant Ground Chakkars Special (10s)',
     category: 'Chakkars',
     mrp: 280,
@@ -81,7 +81,7 @@ export const initialInventory: Item[] = [
   },
   {
     id: '7',
-    itemCode: 'CRK007',
+    itemCode: 'CHK002',
     itemName: 'Whistling Ground Wheel Deluxe (5s)',
     category: 'Chakkars',
     mrp: 390,
@@ -94,7 +94,7 @@ export const initialInventory: Item[] = [
   },
   {
     id: '8',
-    itemCode: 'CRK008',
+    itemCode: 'SND001',
     itemName: 'Atom Bomb Green Thunder (10s)',
     category: 'Sound Crackers',
     mrp: 260,
@@ -107,7 +107,7 @@ export const initialInventory: Item[] = [
   },
   {
     id: '9',
-    itemCode: 'CRK009',
+    itemCode: 'SND002',
     itemName: '1000 Wala Red Garland Crackers',
     category: 'Sound Crackers',
     mrp: 1450,
@@ -120,7 +120,7 @@ export const initialInventory: Item[] = [
   },
   {
     id: '10',
-    itemCode: 'CRK010',
+    itemCode: 'RKT001',
     itemName: 'Deluxe Sky Rockets Pack (10s)',
     category: 'Rockets',
     mrp: 480,
@@ -133,7 +133,7 @@ export const initialInventory: Item[] = [
   },
   {
     id: '11',
-    itemCode: 'CRK011',
+    itemCode: 'ARL001',
     itemName: '12-Shot Fancy Aerial Repeater Cake',
     category: 'Aerial Shots',
     mrp: 950,
@@ -146,7 +146,7 @@ export const initialInventory: Item[] = [
   },
   {
     id: '12',
-    itemCode: 'CRK012',
+    itemCode: 'ARL002',
     itemName: '30-Shot Multi Color Fireworks Spectacle',
     category: 'Aerial Shots',
     mrp: 1850,
@@ -159,7 +159,7 @@ export const initialInventory: Item[] = [
   },
   {
     id: '13',
-    itemCode: 'CRK013',
+    itemCode: 'FNT003',
     itemName: 'Peacock Feather Fountain Large (3s)',
     category: 'Fountains',
     mrp: 380,
@@ -172,7 +172,7 @@ export const initialInventory: Item[] = [
   },
   {
     id: '14',
-    itemCode: 'CRK014',
+    itemCode: 'GFT001',
     itemName: 'Diwali Grand Family Gift Box (25 Items)',
     category: 'Gift Boxes',
     mrp: 2990,
@@ -185,7 +185,7 @@ export const initialInventory: Item[] = [
   },
   {
     id: '15',
-    itemCode: 'CRK015',
+    itemCode: 'NVL001',
     itemName: 'Twinkling Star Sparkler Pencils (10s)',
     category: 'Novelty',
     mrp: 120,

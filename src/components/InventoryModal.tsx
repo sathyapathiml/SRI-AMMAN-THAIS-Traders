@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { Item, DiscountType, User } from '../types/pos';
 import { Package, Plus, Search, Download, Upload, RotateCcw, X, Edit, Trash2, Save, CheckSquare, Square, Layers, Percent, DollarSign, ArrowUpRight, ArrowDownRight, Tag, ShieldCheck } from 'lucide-react';
+import { generateCategoryItemCode } from '../utils/categoryItemCode';
 
 interface InventoryModalProps {
   isOpen: boolean;
@@ -83,13 +84,13 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
   };
 
   const handleCreateNew = () => {
-    const nextNum = inventory.length + 1;
-    const newCode = `CRK${nextNum.toString().padStart(3, '0')}`;
+    const defaultCategory = 'Sparklers';
+    const newCode = generateCategoryItemCode(defaultCategory, inventory);
     setEditingItem({
       id: Date.now().toString(),
       itemCode: newCode,
       itemName: '',
-      category: 'Sparklers',
+      category: defaultCategory,
       mrp: 100,
       defaultDiscountValue: 10,
       defaultDiscountType: 'percent',
@@ -565,7 +566,11 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
                     type="text"
                     required
                     value={editingItem.category}
-                    onChange={(e) => setEditingItem({ ...editingItem, category: e.target.value })}
+                    onChange={(e) => {
+                      const newCat = e.target.value;
+                      const autoCode = isAddingNew ? generateCategoryItemCode(newCat, inventory) : editingItem.itemCode;
+                      setEditingItem({ ...editingItem, category: newCat, itemCode: autoCode });
+                    }}
                     className="w-full bg-slate-900 border border-slate-700 focus:border-emerald-500 rounded-lg p-2 text-white outline-none"
                   />
                 </div>
