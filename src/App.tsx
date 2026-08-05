@@ -25,7 +25,8 @@ import {
   saveSettingsToDB, 
   getStoredPrinterConfig, 
   savePrinterConfigToDB, 
-  resetInventoryToDefault 
+  resetInventoryToDefault,
+  resetStoredInvoices
 } from './services/db';
 import { calculateCartTotals, createCartItemFromItem, calculateLineItem } from './utils/calculations';
 import { printInvoiceViaSerial } from './services/serialPrinter';
@@ -41,7 +42,8 @@ import {
   saveLanSettings,
   fetchLanExpenses,
   postLanExpense,
-  deleteLanExpense
+  deleteLanExpense,
+  resetLanInvoices
 } from './services/api';
 
 import { HeaderBar } from './components/HeaderBar';
@@ -589,6 +591,21 @@ export function App() {
     }
   };
 
+  const handleResetInvoices = async () => {
+    if (lanConnected) {
+      const res = await resetLanInvoices();
+      if (res) {
+        setInvoices(res);
+      } else {
+        const cleared = resetStoredInvoices();
+        setInvoices(cleared);
+      }
+    } else {
+      const cleared = resetStoredInvoices();
+      setInvoices(cleared);
+    }
+  };
+
   return (
     <div className="h-screen w-screen flex flex-col bg-slate-950 text-slate-100 font-sans overflow-hidden select-none">
       {/* Top Header Navbar */}
@@ -744,6 +761,7 @@ export function App() {
         }}
         currentUser={currentUser}
         onOpenLoginModal={() => setIsLoginModalOpen(true)}
+        onResetInvoices={handleResetInvoices}
       />
 
       <SettingsModal

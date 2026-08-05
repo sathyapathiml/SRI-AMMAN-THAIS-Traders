@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { Invoice, StoreSettings, User } from '../types/pos';
-import { History, Search, Printer, X, Banknote, QrCode, CreditCard, ShieldCheck, Lock, EyeOff } from 'lucide-react';
+import { History, Search, Printer, X, Banknote, QrCode, CreditCard, RotateCcw } from 'lucide-react';
 
 interface InvoiceHistoryModalProps {
   isOpen: boolean;
@@ -10,6 +10,7 @@ interface InvoiceHistoryModalProps {
   onSelectInvoiceToPrint: (invoice: Invoice) => void;
   currentUser: User | null;
   onOpenLoginModal?: () => void;
+  onResetInvoices?: () => void;
 }
 
 export const InvoiceHistoryModal: React.FC<InvoiceHistoryModalProps> = ({
@@ -18,7 +19,8 @@ export const InvoiceHistoryModal: React.FC<InvoiceHistoryModalProps> = ({
   invoices,
   settings,
   onSelectInvoiceToPrint,
-  currentUser
+  currentUser,
+  onResetInvoices
 }) => {
   const [query, setQuery] = useState('');
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
@@ -82,9 +84,27 @@ export const InvoiceHistoryModal: React.FC<InvoiceHistoryModalProps> = ({
               </span>
             )}
           </div>
-          <button onClick={onClose} className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800">
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            {isAdmin && onResetInvoices && (
+              <button
+                onClick={() => {
+                  const confirmReset = window.confirm('⚠️ ADMIN ACTION: Are you sure you want to reset all sales bills and clear invoice history? The invoice sequence counter will reset back to #1.');
+                  if (confirmReset) {
+                    onResetInvoices();
+                    setSelectedInvoice(null);
+                  }
+                }}
+                className="py-1 px-3 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 font-bold text-xs flex items-center gap-1 transition"
+                title="Clear all bill history and reset sequence counter"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Reset Bills</span>
+              </button>
+            )}
+            <button onClick={onClose} className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Financial Analytics Summary Grid: SHOWN ONLY FOR ADMIN */}

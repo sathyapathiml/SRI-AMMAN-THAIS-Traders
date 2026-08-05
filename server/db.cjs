@@ -218,6 +218,11 @@ module.exports = {
     return rows.map(r => ({ ...r, items: JSON.parse(r.items) }));
   },
 
+  resetInvoices: async () => {
+    await runSql('DELETE FROM invoices');
+    await runSql('UPDATE counter SET seq = 100 WHERE key = "inv"');
+  },
+
   saveInvoice: async (invoiceData) => {
     await runSql('BEGIN TRANSACTION');
     try {

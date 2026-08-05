@@ -74,6 +74,19 @@ export const fetchLanInvoices = async (): Promise<Invoice[] | null> => {
   }
 };
 
+export const resetLanInvoices = async (): Promise<Invoice[] | null> => {
+  try {
+    const res = await fetch(`${API_BASE}/invoices/reset`, { method: 'POST' });
+    if (res.ok) {
+      const data = await res.json();
+      return data.invoices;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+};
+
 export const postLanInvoice = async (invoice: Partial<Invoice>): Promise<{ invoice: Invoice; invoices: Invoice[]; inventory: Item[] } | null> => {
   try {
     const res = await fetch(`${API_BASE}/invoices`, {

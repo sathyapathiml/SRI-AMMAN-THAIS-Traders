@@ -70,6 +70,17 @@ export const getStoredInvoices = (): Invoice[] => {
   }
 };
 
+export const resetStoredInvoices = (): Invoice[] => {
+  try {
+    localStorage.setItem(STORAGE_KEYS.INVOICES, JSON.stringify([]));
+    localStorage.setItem(STORAGE_KEYS.INVOICE_COUNTER, '100');
+    return [];
+  } catch (err) {
+    console.error('Failed to reset invoices in localStorage', err);
+    return [];
+  }
+};
+
 export const saveInvoiceToDB = (invoice: Invoice): Invoice[] => {
   const invoices = getStoredInvoices();
   const updatedInvoices = [invoice, ...invoices];

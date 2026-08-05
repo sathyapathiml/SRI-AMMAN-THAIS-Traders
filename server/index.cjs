@@ -83,6 +83,16 @@ app.get('/api/invoices', async (req, res) => {
   }
 });
 
+app.post('/api/invoices/reset', async (req, res) => {
+  try {
+    await db.resetInvoices();
+    const invoices = await db.getInvoices();
+    res.json({ success: true, invoices });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.post('/api/invoices', async (req, res) => {
   try {
     const newInvoice = await db.saveInvoice(req.body);
