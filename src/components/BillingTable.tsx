@@ -20,7 +20,7 @@ export const BillingTable: React.FC<BillingTableProps> = ({
   onOpenBulkDiscount
 }) => {
   return (
-    <div className="flex-1 flex flex-col bg-slate-900 rounded-xl border border-slate-800 shadow-lg overflow-hidden">
+    <div className="flex-1 flex flex-col bg-slate-900 rounded-xl border border-slate-800 shadow-lg overflow-hidden min-h-[300px] md:min-h-[400px]">
       {/* Table Top Controls Header */}
       <div className="px-4 py-3 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between gap-2 shrink-0">
         <div className="flex items-center gap-2">
