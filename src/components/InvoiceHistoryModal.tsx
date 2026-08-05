@@ -59,13 +59,13 @@ export const InvoiceHistoryModal: React.FC<InvoiceHistoryModalProps> = ({
   // Extract unique counter names for Admin filter dropdown
   const availableCounters = Array.from(new Set(invoices.map(i => i.counterNo || 'Counter 1'))).sort();
 
-  // Calculate Sales Summary Statistics (Admin Only)
-  const totalRevenue = invoices.reduce((acc, i) => acc + i.grandTotal, 0);
-  const totalTax = invoices.reduce((acc, i) => acc + i.totalGST, 0);
+  // Calculate Sales Summary Statistics (Admin / Worker filtered)
+  const totalRevenue = accessibleInvoices.reduce((acc, i) => acc + i.grandTotal, 0);
+  const totalTax = accessibleInvoices.reduce((acc, i) => acc + i.totalGST, 0);
 
-  const cashTotal = invoices.filter(i => i.paymentMode === 'Cash').reduce((acc, i) => acc + i.grandTotal, 0);
-  const upiTotal = invoices.filter(i => i.paymentMode === 'UPI').reduce((acc, i) => acc + i.grandTotal, 0);
-  const cardTotal = invoices.filter(i => i.paymentMode === 'Card').reduce((acc, i) => acc + i.grandTotal, 0);
+  const cashTotal = accessibleInvoices.filter(i => i.paymentMode === 'Cash').reduce((acc, i) => acc + i.grandTotal, 0);
+  const upiTotal = accessibleInvoices.filter(i => i.paymentMode === 'UPI').reduce((acc, i) => acc + i.grandTotal, 0);
+  const cardTotal = accessibleInvoices.filter(i => i.paymentMode === 'Card').reduce((acc, i) => acc + i.grandTotal, 0);
 
   return (
     <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
