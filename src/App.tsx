@@ -83,6 +83,7 @@ export function App() {
   // Data state
   const [inventory, setInventory] = useState<Item[]>(() => getStoredInventory());
   const [invoices, setInvoices] = useState<Invoice[]>(() => getStoredInvoices());
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [heldBills, setHeldBills] = useState<HeldBill[]>(() => getStoredHeldBills());
   const [settings, setSettings] = useState<StoreSettings>(() => getStoredSettings());
   const [printerConfig, setPrinterConfig] = useState<PrinterConfig>(() => getStoredPrinterConfig());
@@ -143,6 +144,14 @@ export function App() {
     () => calculateCartTotals(cartItems, overallDiscountValue, overallDiscountType),
     [cartItems, overallDiscountValue, overallDiscountType]
   );
+
+  // Auto-clear toast
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
 
   // Handle Login Success
   const handleLoginSuccess = (user: User) => {
@@ -566,52 +575,89 @@ export function App() {
     const updated = inventory.filter(i => i.id !== id && i.itemCode !== id);
     setInventory(updated);
     saveInventory(updated);
-
-    const lanUpdated = await deleteLanInventoryItem(id);
-    if (lanUpdated) {
-      setInventory(lanUpdated);
-      saveInventory(lanUpdated);
+    try {
+      const lanUpdated = await deleteLanInventoryItem(id);
+      if (lanUpdated) {
+        setInventory(lanUpdated);
+        saveInventory(lanUpdated);
+        setToast({ message: 'Item deleted.', type: 'success' });
+      } else {
+        setToast({ message: 'Failed to delete item on server.', type: 'error' });
+      }
+    } catch (err) {
+      console.error(err);
+      setToast({ message: 'Error deleting item.', type: 'error' });
     }
   };
 
   const handleResetInventory = async () => {
-    const def = resetInventoryToDefault();
-    setInventory(def);
-    saveInventory(def);
+    try {
+      const def = resetInventoryToDefault();
+      setInventory(def);
+      saveInventory(def);
 
-    const lanUpdated = await resetLanInventory();
-    if (lanUpdated) {
-      setInventory(lanUpdated);
-      saveInventory(lanUpdated);
+      const lanUpdated = await resetLanInventory();
+      if (lanUpdated) {
+        setInventory(lanUpdated);
+        saveInventory(lanUpdated);
+        setToast({ message: 'Inventory reset successfully.', type: 'success' });
+      } else {
+        setToast({ message: 'Failed to reset inventory on server.', type: 'error' });
+      }
+    } catch (err) {
+      console.error(err);
+      setToast({ message: 'Error resetting inventory.', type: 'error' });
     }
   };
 
   const handleImportInventory = async (items: Item[]) => {
     setInventory(items);
     saveInventory(items);
-
-    const lanUpdated = await importLanInventory(items);
-    if (lanUpdated) {
-      setInventory(lanUpdated);
-      saveInventory(lanUpdated);
+    try {
+      const lanUpdated = await importLanInventory(items);
+      if (lanUpdated) {
+        setInventory(lanUpdated);
+        saveInventory(lanUpdated);
+        setToast({ message: 'Inventory imported.', type: 'success' });
+      } else {
+        setToast({ message: 'Failed to import inventory on server.', type: 'error' });
+      }
+    } catch (err) {
+      console.error(err);
+      setToast({ message: 'Error importing inventory.', type: 'error' });
     }
   };
 
   const handleResetInvoices = async () => {
-    // 1. ALWAYS wipe browser local storage immediately
-    const cleared = resetStoredInvoices();
-    setInvoices(cleared);
+    try {
+      // 1. ALWAYS wipe browser local storage immediately
+      const cleared = resetStoredInvoices();
+      setInvoices(cleared);
 
-    // 2. Clear backend database server
-    const res = await resetLanInvoices();
-    if (res) {
-      setInvoices(res);
-      localStorage.setItem('crackers_pos_invoices_v1', JSON.stringify(res));
+      // 2. Clear backend database server
+      const res = await resetLanInvoices();
+      if (res) {
+        setInvoices(res);
+        localStorage.setItem('crackers_pos_invoices_v1', JSON.stringify(res));
+        setToast({ message: 'Invoices reset successfully.', type: 'success' });
+      } else {
+        setToast({ message: 'Failed to reset invoices on server.', type: 'error' });
+      }
+    } catch (err) {
+      console.error(err);
+      setToast({ message: 'Error resetting invoices.', type: 'error' });
     }
   };
 
   return (
     <div className="h-screen w-screen flex flex-col bg-slate-950 text-slate-100 font-sans overflow-hidden select-none">
+      {/* Toast Notification */}
+      {toast && (
+        <div className={`fixed top-4 right-4 z-[9999] p-4 rounded-lg shadow-xl text-white font-bold ${toast.type === 'success' ? 'bg-green-600' : 'bg-red-600'}`}>
+          {toast.message}
+        </div>
+      )}
+
       {/* Top Header Navbar */}
       <HeaderBar
         inventory={inventory}
