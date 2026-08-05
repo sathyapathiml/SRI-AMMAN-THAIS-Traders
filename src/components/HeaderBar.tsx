@@ -68,6 +68,7 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
   const [results, setResults] = useState<Item[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
+  const [lastAddedId, setLastAddedId] = useState<string | null>(null);
   const itemRefs = React.useRef<(HTMLDivElement | null)[]>([]);
 
   // Filter items matching itemCode or itemName via case-insensitive regex
@@ -101,10 +102,12 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
     }
   }, [selectedIndex, isOpen]);
 
-  const handleSelect = (item: Item) => {
+  const handleSelect = (item: Item, keepOpen = false) => {
     onSelectItem(item);
-    setQuery('');
-    setIsOpen(false);
+    if (!keepOpen) {
+      setQuery('');
+      setIsOpen(false);
+    }
     if (searchInputRef.current) {
       searchInputRef.current.focus();
     }
@@ -122,9 +125,9 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
       if (results.length > 0) {
         const exactCodeMatch = results.find(i => i.itemCode.toLowerCase() === query.trim().toLowerCase());
         if (exactCodeMatch) {
-          handleSelect(exactCodeMatch);
+          handleSelect(exactCodeMatch, true); // Keep open on Enter so cashier can add more
         } else if (results[selectedIndex]) {
-          handleSelect(results[selectedIndex]);
+          handleSelect(results[selectedIndex], true); // Keep open on Enter
         }
       }
     } else if (e.key === 'Escape') {
@@ -201,18 +204,35 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
 
         {/* Wide View Auto-complete Dropdown Panel */}
         {isOpen && results.length > 0 && (
-          <div className="absolute left-0 right-0 md:w-[720px] lg:w-[850px] md:-left-36 lg:-left-48 top-full mt-1.5 bg-slate-900 border-2 border-cyan-500/40 rounded-2xl shadow-2xl overflow-hidden z-50 divide-y divide-slate-800/80 max-h-96 overflow-y-auto backdrop-blur-md">
-            <div className="bg-slate-950 px-3 py-1.5 border-b border-slate-800 flex items-center justify-between text-[11px] font-bold text-slate-400">
-              <span>{results.length} Items Found (Press ↑/↓ to navigate, Enter to select)</span>
-              <span className="text-cyan-400 font-bold">Wide View Quick Search</span>
+          <div className="absolute left-0 right-0 md:w-[720px] lg:w-[850px] md:-left-36 lg:-left-48 top-full mt-1.5 bg-slate-900 border-2 border-cyan-500/50 rounded-2xl shadow-2xl overflow-hidden z-50 divide-y divide-slate-800/80 max-h-96 overflow-y-auto backdrop-blur-md">
+            <div className="bg-slate-950 px-3 py-2 border-b border-slate-800 flex items-center justify-between text-xs font-bold text-slate-300">
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span>{results.length} Items (Click <strong className="text-cyan-400">+ Add</strong> on any item to add multiple items)</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsOpen(false);
+                  setQuery('');
+                }}
+                className="px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 font-bold border border-rose-500/30 transition flex items-center gap-1 text-[11px]"
+              >
+                <span>Done / Close (Esc)</span>
+              </button>
             </div>
             {results.map((item, idx) => {
               const displayPrice = (priceTier === 'wholesale' && item.wholesalePrice && item.wholesalePrice > 0) ? item.wholesalePrice : item.mrp;
+              const isJustAdded = lastAddedId === item.id;
               return (
                 <div
                   key={item.id}
                   ref={(el) => { itemRefs.current[idx] = el; }}
-                  onClick={() => handleSelect(item)}
+                  onClick={() => {
+                    handleSelect(item, true);
+                    setLastAddedId(item.id);
+                    setTimeout(() => setLastAddedId(null), 1200);
+                  }}
                   className={`px-4 py-3 cursor-pointer flex items-center justify-between gap-4 transition-all ${
                     idx === selectedIndex ? 'bg-cyan-950/90 border-l-4 border-cyan-400 text-white' : 'hover:bg-slate-800/70 text-slate-200'
                   }`}
@@ -243,8 +263,21 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
                         <div className="text-[10px] text-slate-400 font-mono font-bold">WS: ₹{item.wholesalePrice}</div>
                       )}
                     </div>
-                    <button className="px-3 py-1.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs uppercase tracking-wide shadow-md transition shrink-0 hidden sm:block">
-                      + Add
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSelect(item, true);
+                        setLastAddedId(item.id);
+                        setTimeout(() => setLastAddedId(null), 1200);
+                      }}
+                      className={`px-3 py-1.5 rounded-xl font-black text-xs uppercase tracking-wide shadow-md transition shrink-0 ${
+                        isJustAdded
+                          ? 'bg-emerald-500 text-slate-950 animate-bounce'
+                          : 'bg-cyan-500 hover:bg-cyan-400 text-slate-950'
+                      }`}
+                    >
+                      {isJustAdded ? '✓ Added!' : '+ Add'}
                     </button>
                   </div>
                 </div>
