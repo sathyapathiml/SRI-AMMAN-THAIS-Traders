@@ -43,7 +43,8 @@ import {
   fetchLanExpenses,
   postLanExpense,
   deleteLanExpense,
-  resetLanInvoices
+  resetLanInvoices,
+  importLanInventory
 } from './services/api';
 
 import { HeaderBar } from './components/HeaderBar';
@@ -543,7 +544,7 @@ export function App() {
 
   // Inventory Save handler
   const handleSaveItem = async (item: Item) => {
-    const existingIdx = inventory.findIndex(i => i.id === item.id);
+    const existingIdx = inventory.findIndex(i => i.id === item.id || i.itemCode === item.itemCode);
     let updated: Item[];
     if (existingIdx >= 0) {
       updated = [...inventory];
@@ -554,30 +555,34 @@ export function App() {
     setInventory(updated);
     saveInventory(updated);
 
-    if (lanConnected) {
-      const lanUpdated = await saveLanInventoryItem(item);
-      if (lanUpdated) setInventory(lanUpdated);
+    const lanUpdated = await saveLanInventoryItem(item);
+    if (lanUpdated) {
+      setInventory(lanUpdated);
+      saveInventory(lanUpdated);
     }
   };
 
   const handleDeleteItem = async (id: string) => {
-    const updated = inventory.filter(i => i.id !== id);
+    const updated = inventory.filter(i => i.id !== id && i.itemCode !== id);
     setInventory(updated);
     saveInventory(updated);
 
-    if (lanConnected) {
-      const lanUpdated = await deleteLanInventoryItem(id);
-      if (lanUpdated) setInventory(lanUpdated);
+    const lanUpdated = await deleteLanInventoryItem(id);
+    if (lanUpdated) {
+      setInventory(lanUpdated);
+      saveInventory(lanUpdated);
     }
   };
 
   const handleResetInventory = async () => {
     const def = resetInventoryToDefault();
     setInventory(def);
+    saveInventory(def);
 
-    if (lanConnected) {
-      const lanUpdated = await resetLanInventory();
-      if (lanUpdated) setInventory(lanUpdated);
+    const lanUpdated = await resetLanInventory();
+    if (lanUpdated) {
+      setInventory(lanUpdated);
+      saveInventory(lanUpdated);
     }
   };
 
@@ -585,10 +590,10 @@ export function App() {
     setInventory(items);
     saveInventory(items);
 
-    if (lanConnected) {
-      for (const item of items) {
-        await saveLanInventoryItem(item);
-      }
+    const lanUpdated = await importLanInventory(items);
+    if (lanUpdated) {
+      setInventory(lanUpdated);
+      saveInventory(lanUpdated);
     }
   };
 
@@ -597,13 +602,11 @@ export function App() {
     const cleared = resetStoredInvoices();
     setInvoices(cleared);
 
-    // 2. Clear backend LAN database if server is connected
-    if (lanConnected) {
-      const res = await resetLanInvoices();
-      if (res) {
-        setInvoices(res);
-        localStorage.setItem('crackers_pos_invoices_v1', JSON.stringify(res));
-      }
+    // 2. Clear backend database server
+    const res = await resetLanInvoices();
+    if (res) {
+      setInvoices(res);
+      localStorage.setItem('crackers_pos_invoices_v1', JSON.stringify(res));
     }
   };
 

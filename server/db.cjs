@@ -71,6 +71,11 @@ db.serialize(() => {
     )
   `);
 
+  // Safely add wholesalePrice column to existing SQLite database if missing
+  db.run('ALTER TABLE inventory ADD COLUMN wholesalePrice REAL', (err) => {
+    // Ignore error if column already exists
+  });
+
   // Safely add counterNo column to existing SQLite database if missing
   db.run('ALTER TABLE invoices ADD COLUMN counterNo TEXT', (err) => {
     // Ignore error if column already exists
@@ -182,35 +187,87 @@ module.exports = {
 
   saveInventoryItem: async (item) => {
     await runSql(`
-      INSERT INTO inventory (id, itemCode, itemName, category, mrp, defaultDiscountValue, defaultDiscountType, defaultGstRate, isGstApplicable, stockQty)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO inventory (id, itemCode, itemName, category, mrp, wholesalePrice, defaultDiscountValue, defaultDiscountType, defaultGstRate, isGstApplicable, stockQty)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(id) DO UPDATE SET
         itemCode=excluded.itemCode,
         itemName=excluded.itemName,
         category=excluded.category,
         mrp=excluded.mrp,
+        wholesalePrice=excluded.wholesalePrice,
         defaultDiscountValue=excluded.defaultDiscountValue,
         defaultDiscountType=excluded.defaultDiscountType,
         defaultGstRate=excluded.defaultGstRate,
         isGstApplicable=excluded.isGstApplicable,
         stockQty=excluded.stockQty
-    `, [item.id, item.itemCode, item.itemName, item.category, item.mrp, item.defaultDiscountValue, item.defaultDiscountType, item.defaultGstRate, item.isGstApplicable ? 1 : 0, item.stockQty]);
+    `, [
+      item.id,
+      item.itemCode,
+      item.itemName,
+      item.category,
+      item.mrp || 0,
+      item.wholesalePrice || 0,
+      item.defaultDiscountValue || 0,
+      item.defaultDiscountType || 'percent',
+      item.defaultGstRate || 0,
+      item.isGstApplicable ? 1 : 0,
+      item.stockQty || 0
+    ]);
   },
 
   deleteInventoryItem: async (id) => {
-    await runSql('DELETE FROM inventory WHERE id = ?', [id]);
+    await runSql('DELETE FROM inventory WHERE id = ? OR itemCode = ?', [id, id]);
+  },
+
+  importInventory: async (items) => {
+    await runSql('BEGIN TRANSACTION');
+    try {
+      await runSql('DELETE FROM inventory');
+      for (const item of items) {
+        await runSql(`
+          INSERT INTO inventory (id, itemCode, itemName, category, mrp, wholesalePrice, defaultDiscountValue, defaultDiscountType, defaultGstRate, isGstApplicable, stockQty)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [
+          item.id || (Date.now().toString() + Math.random().toString().slice(2, 6)),
+          item.itemCode,
+          item.itemName,
+          item.category || 'General',
+          item.mrp || 0,
+          item.wholesalePrice || 0,
+          item.defaultDiscountValue || 0,
+          item.defaultDiscountType || 'percent',
+          item.defaultGstRate || 0,
+          item.isGstApplicable ? 1 : 0,
+          item.stockQty || 0
+        ]);
+      }
+      await runSql('COMMIT');
+    } catch (err) {
+      await runSql('ROLLBACK');
+      throw err;
+    }
   },
 
   resetInventory: async () => {
     await runSql('DELETE FROM inventory');
-    const stmt = db.prepare(`
-      INSERT INTO inventory (id, itemCode, itemName, category, mrp, defaultDiscountValue, defaultDiscountType, defaultGstRate, isGstApplicable, stockQty)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-    initialInventory.forEach(item => {
-      stmt.run(item.id, item.itemCode, item.itemName, item.category, item.mrp, item.defaultDiscountValue, item.defaultDiscountType, item.defaultGstRate, item.isGstApplicable, item.stockQty);
-    });
-    stmt.finalize();
+    for (const item of initialInventory) {
+      await runSql(`
+        INSERT INTO inventory (id, itemCode, itemName, category, mrp, wholesalePrice, defaultDiscountValue, defaultDiscountType, defaultGstRate, isGstApplicable, stockQty)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `, [
+        item.id,
+        item.itemCode,
+        item.itemName,
+        item.category,
+        item.mrp || 0,
+        item.wholesalePrice || 0,
+        item.defaultDiscountValue || 0,
+        item.defaultDiscountType || 'percent',
+        item.defaultGstRate || 0,
+        item.isGstApplicable ? 1 : 0,
+        item.stockQty || 0
+      ]);
+    }
   },
 
   getInvoices: async () => {
@@ -219,8 +276,15 @@ module.exports = {
   },
 
   resetInvoices: async () => {
-    await runSql('DELETE FROM invoices');
-    await runSql('UPDATE counter SET seq = 100 WHERE key = "inv"');
+    await runSql('BEGIN TRANSACTION');
+    try {
+      await runSql('DELETE FROM invoices');
+      await runSql('UPDATE counter SET seq = 100 WHERE key = "inv"');
+      await runSql('COMMIT');
+    } catch (err) {
+      await runSql('ROLLBACK');
+      throw err;
+    }
   },
 
   saveInvoice: async (invoiceData) => {

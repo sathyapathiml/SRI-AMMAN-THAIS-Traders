@@ -74,6 +74,16 @@ app.post('/api/inventory/reset', async (req, res) => {
   }
 });
 
+app.post('/api/inventory/import', async (req, res) => {
+  try {
+    await db.importInventory(req.body);
+    const items = await db.getInventory();
+    res.json(items);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.get('/api/invoices', async (req, res) => {
   try {
     const invoices = await db.getInvoices();

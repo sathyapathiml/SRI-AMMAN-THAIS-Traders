@@ -64,6 +64,20 @@ export const resetLanInventory = async (): Promise<Item[] | null> => {
   }
 };
 
+export const importLanInventory = async (items: Item[]): Promise<Item[] | null> => {
+  try {
+    const res = await fetch(`${API_BASE}/inventory/import`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(items)
+    });
+    if (res.ok) return await res.json();
+    return null;
+  } catch {
+    return null;
+  }
+};
+
 export const fetchLanInvoices = async (): Promise<Invoice[] | null> => {
   try {
     const res = await fetch(`${API_BASE}/invoices`);
