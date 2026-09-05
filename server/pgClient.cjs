@@ -1,11 +1,16 @@
 const { Pool } = require('pg');
 
-// Expect DATABASE_URL env var (e.g., postgres://user:pass@host:5432/dbname)
-// Provide a fallback for local development if DATABASE_URL is not set.
-const connectionString = process.env.DATABASE_URL || 'postgres://postgres:postgres@localhost:5432/billing';
-const pool = new Pool({
-  connectionString,
-  // optional: increase pool size, timeouts, etc.
-});
+let pool = null;
+
+if (process.env.DATABASE_URL) {
+  const isLocal = process.env.DATABASE_URL.includes('localhost') || process.env.DATABASE_URL.includes('127.0.0.1');
+  pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: isLocal ? false : { rejectUnauthorized: false }
+  });
+  console.log('🐘 PostgreSQL connection pool initialized with DATABASE_URL.');
+} else {
+  console.log('📁 No DATABASE_URL provided. Falling back to local SQLite database (server/billing.db).');
+}
 
 module.exports = { pool };
