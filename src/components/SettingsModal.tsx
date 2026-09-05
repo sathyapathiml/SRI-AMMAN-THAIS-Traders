@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import type { StoreSettings, PrinterConfig, User } from '../types/pos';
-import { Settings as SettingsIcon, Printer, Store, Save, X, Cpu, CheckCircle } from 'lucide-react';
+import type { StoreSettings, PrinterConfig, User, Invoice } from '../types/pos';
+import { Settings as SettingsIcon, Printer, Store, Save, X, Cpu, CheckCircle, Zap } from 'lucide-react';
 import { requestSerialPort, isWebSerialSupported, testSerialPrint } from '../services/serialPrinter';
+import { printViaUsbApi } from '../services/api';
+import { buildEscPosBuffer, bufferToBase64 } from '../services/escpos';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -11,6 +13,7 @@ interface SettingsModalProps {
   printerConfig: PrinterConfig;
   onSavePrinterConfig: (config: PrinterConfig) => void;
   currentUser?: User | null;
+  detectedPrinter?: { name: string; port: string; driver?: string; isTvs?: boolean } | null;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -20,7 +23,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onSaveSettings,
   printerConfig,
   onSavePrinterConfig,
-  currentUser
+  currentUser,
+  detectedPrinter
 }) => {
   const [storeForm, setStoreForm] = useState<StoreSettings>(settings);
   const [printerForm, setPrinterForm] = useState<PrinterConfig>(printerConfig);
@@ -73,6 +77,60 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       setStatusMsg('Test print command sent successfully!');
     } catch (err: any) {
       alert(`Test Print Error: ${err.message}`);
+    }
+  };
+
+  const handleUsbTestPrint = async () => {
+    try {
+      const dummyInvoice: Invoice = {
+        id: 'test-01',
+        invoiceNo: 'TEST-00001',
+        createdAt: new Date().toISOString(),
+        customerName: 'TVSE RP-3200 LITE TEST',
+        items: [
+          {
+            id: 't-1',
+            itemCode: 'TEST01',
+            itemName: 'TVS RP-3200 Lite 3-Inch Test Item',
+            mrp: 100,
+            qty: 1,
+            stockQty: 50,
+            discountValue: 0,
+            discountType: 'percent',
+            lineSubtotalMRP: 100,
+            lineDiscountAmount: 0,
+            lineTaxableAmount: 100,
+            gstRate: 0,
+            isGstApplicable: false,
+            lineGstAmount: 0,
+            lineCgstAmount: 0,
+            lineSgstAmount: 0,
+            lineGrandTotal: 100
+          }
+        ],
+        subtotalMRP: 100,
+        itemDiscountsTotal: 0,
+        totalDiscount: 0,
+        taxableAmount: 100,
+        totalCGST: 0,
+        totalSGST: 0,
+        totalGST: 0,
+        grandTotal: 100,
+        paymentMode: 'Cash'
+      };
+
+      const escPosBytes = buildEscPosBuffer(dummyInvoice, storeForm, printerForm.autoCut, printerForm.openCashDrawer);
+      const base64 = bufferToBase64(escPosBytes);
+      const ok = await printViaUsbApi(detectedPrinter?.name || 'TVSE RP3200 Lite', base64);
+      if (ok) {
+        setStatusMsg('Test receipt sent to TVSE RP3200 Lite over USB!');
+      } else {
+        setStatusMsg('Could not send USB test print. Ensure TVSE printer is connected and turned on.');
+      }
+      setTimeout(() => setStatusMsg(''), 4000);
+    } catch (err: any) {
+      setStatusMsg('Print error: ' + err.message);
+      setTimeout(() => setStatusMsg(''), 4000);
     }
   };
 
@@ -233,81 +291,169 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
           ) : (
             <div className="space-y-4 text-xs">
-              {/* TVS RP-3200 Lite 3-Inch Thermal Printer Preset Banner */}
-              <div className="p-3.5 bg-gradient-to-r from-amber-950/40 via-slate-900 to-cyan-950/40 rounded-xl border border-amber-500/40 space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Printer className="w-5 h-5 text-amber-400" />
-                    <div>
-                      <div className="font-bold text-white text-sm flex items-center gap-1.5">
-                        <span>TVS RP-3200 Lite</span>
-                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40">3-Inch / 80mm</span>
+              {/* Detected Windows USB Thermal Printer Banner */}
+              {detectedPrinter ? (
+                <div className="p-3.5 bg-gradient-to-r from-emerald-950/60 via-slate-900 to-cyan-950/60 rounded-xl border border-emerald-500/50 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
+                        <Printer className="w-5 h-5" />
                       </div>
-                      <div className="text-[11px] text-slate-400">High-speed 200mm/s 3-inch thermal receipt printer with auto-cutter</div>
+                      <div>
+                        <div className="font-extrabold text-white text-sm flex items-center gap-2">
+                          <span>{detectedPrinter.name}</span>
+                          <span className="text-[10px] px-2 py-0.2 rounded bg-emerald-500/20 text-emerald-300 font-mono font-bold border border-emerald-500/40">
+                            Port: {detectedPrinter.port}
+                          </span>
+                          <span className="text-[10px] text-emerald-400 font-bold flex items-center gap-1">
+                            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Ready
+                          </span>
+                        </div>
+                        <div className="text-[11px] text-slate-400">
+                          Windows USB Printing Spooler detected • 3-Inch (80mm) Thermal Roll
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPrinterForm({
+                          ...printerForm,
+                          baudRate: 9600,
+                          autoCut: true,
+                          openCashDrawer: true,
+                          printMode: 'usb',
+                          usbPrinterName: detectedPrinter.name
+                        });
+                        setStatusMsg('TVS RP-3200 Lite USB configuration active!');
+                        setTimeout(() => setStatusMsg(''), 3000);
+                      }}
+                      className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-lg text-xs transition shadow flex items-center gap-1 shrink-0"
+                    >
+                      <Zap className="w-3.5 h-3.5" />
+                      <span>Use This Printer</span>
+                    </button>
+                  </div>
+                  <div className="text-[11px] text-slate-300 bg-slate-950/70 p-2.5 rounded-lg border border-slate-800 space-y-1">
+                    <div className="font-semibold text-emerald-300">💡 USB Connection Status:</div>
+                    <div className="text-slate-400">
+                      Your TVS RP-3200 Lite is connected via <strong>USB ({detectedPrinter.port})</strong> with the official Windows driver.
+                      You can print directly using <strong>Direct Windows USB Print</strong> (1-click silent print) or <strong>Browser 80mm Print</strong> (standard print preview).
                     </div>
                   </div>
+                </div>
+              ) : (
+                <div className="p-3 bg-amber-950/30 rounded-xl border border-amber-500/40 text-amber-300 text-xs flex items-center gap-2">
+                  <Printer className="w-4 h-4 text-amber-400" />
+                  <span>Checking for connected Windows USB thermal printers...</span>
+                </div>
+              )}
+
+              {/* Thermal Output Methods */}
+              <div className="p-3.5 bg-slate-950 rounded-xl border border-slate-800 space-y-2.5">
+                <label className="block font-bold text-slate-300 text-xs">Choose Thermal Print Mode</label>
+                <div className="grid grid-cols-3 gap-2.5">
+                  {/* Mode 1: Direct USB */}
                   <button
                     type="button"
-                    onClick={() => {
-                      setPrinterForm({
-                        ...printerForm,
-                        baudRate: 9600,
-                        autoCut: true,
-                        openCashDrawer: true,
-                        printMode: 'browser'
-                      });
-                      setStatusMsg('TVS RP-3200 Lite 3-inch preset loaded!');
-                      setTimeout(() => setStatusMsg(''), 3000);
-                    }}
-                    className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg text-xs transition shadow flex items-center gap-1 shrink-0"
+                    onClick={() => setPrinterForm({ ...printerForm, printMode: 'usb' })}
+                    className={`p-3 rounded-xl border font-bold text-left transition ${
+                      printerForm.printMode === 'usb'
+                        ? 'bg-emerald-950/70 border-emerald-500 text-white shadow-lg shadow-emerald-950/40'
+                        : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
+                    }`}
                   >
-                    <span>Apply TVS 3-Inch Preset</span>
+                    <div className="text-xs font-black flex items-center gap-1 text-emerald-300">
+                      <Zap className="w-3.5 h-3.5" />
+                      <span>Direct USB (TVSE)</span>
+                    </div>
+                    <div className="text-[10px] text-slate-400 font-normal mt-1">
+                      1-click instant print to TVSE RP3200 Lite on USB001 (Recommended!)
+                    </div>
                   </button>
-                </div>
-                <div className="text-[11px] text-slate-300 bg-slate-950/60 p-2 rounded-lg border border-slate-800/80 space-y-1">
-                  <div className="font-semibold text-amber-300">💡 Recommended TVS RP-3200 Lite Setup:</div>
-                  <div className="text-slate-400">
-                    • <strong>Windows Driver / Browser Print:</strong> Set Paper Size to <span className="text-white font-mono">80mm × Receipt</span> or <span className="text-white font-mono">Roll 80mm</span>, Margins: <span className="text-white">None</span>, uncheck <span className="text-white">Headers and footers</span>.
-                  </div>
-                  <div className="text-slate-400">
-                    • <strong>Direct USB / COM Serial:</strong> Switch to "Web Serial ESC/POS", pair USB port at <span className="text-white font-mono">9600 Baud</span> for 1-click silent printing & auto-cutting!
-                  </div>
-                </div>
-              </div>
 
-              <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-2">
-                <label className="block font-bold text-slate-400">Thermal Output Method</label>
-                <div className="grid grid-cols-2 gap-3">
+                  {/* Mode 2: Browser 80mm */}
                   <button
                     type="button"
                     onClick={() => setPrinterForm({ ...printerForm, printMode: 'browser' })}
                     className={`p-3 rounded-xl border font-bold text-left transition ${
                       printerForm.printMode === 'browser'
-                        ? 'bg-cyan-950/60 border-cyan-500 text-white'
-                        : 'bg-slate-900 border-slate-800 text-slate-400'
+                        ? 'bg-cyan-950/70 border-cyan-500 text-white shadow-lg shadow-cyan-950/40'
+                        : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
                     }`}
                   >
-                    <div className="text-sm">Browser 80mm Print</div>
-                    <div className="text-[10px] text-slate-500 font-normal mt-0.5">Standard Windows print dialog (Works on all browsers)</div>
+                    <div className="text-xs font-black flex items-center gap-1 text-cyan-300">
+                      <Printer className="w-3.5 h-3.5" />
+                      <span>Browser 80mm</span>
+                    </div>
+                    <div className="text-[10px] text-slate-400 font-normal mt-1">
+                      Standard Windows print dialog preview for 80mm rolls
+                    </div>
                   </button>
 
+                  {/* Mode 3: Web Serial */}
                   <button
                     type="button"
                     onClick={() => setPrinterForm({ ...printerForm, printMode: 'serial' })}
                     className={`p-3 rounded-xl border font-bold text-left transition ${
                       printerForm.printMode === 'serial'
-                        ? 'bg-emerald-950/60 border-emerald-500 text-white'
-                        : 'bg-slate-900 border-slate-800 text-slate-400'
+                        ? 'bg-purple-950/70 border-purple-500 text-white shadow-lg shadow-purple-950/40'
+                        : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
                     }`}
                   >
-                    <div className="text-sm flex items-center gap-1.5">
-                      <Cpu className="w-4 h-4 text-emerald-400" />
-                      <span>Web Serial ESC/POS</span>
+                    <div className="text-xs font-black flex items-center gap-1 text-purple-300">
+                      <Cpu className="w-3.5 h-3.5" />
+                      <span>Web Serial Port</span>
                     </div>
-                    <div className="text-[10px] text-slate-500 font-normal mt-0.5">Direct raw byte output over USB/COM port</div>
+                    <div className="text-[10px] text-slate-400 font-normal mt-1">
+                      For older RS-232 COM cables (not for USB001)
+                    </div>
                   </button>
                 </div>
               </div>
+
+              {/* Direct USB Test & Settings */}
+              {printerForm.printMode === 'usb' && (
+                <div className="p-4 bg-slate-950 rounded-xl border border-emerald-500/40 space-y-3 animate-in fade-in">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-bold text-white text-sm">Direct USB Thermal Printing</div>
+                      <div className="text-slate-400 text-[11px]">
+                        Target: <strong className="text-emerald-300">{detectedPrinter?.name || 'TVSE RP3200 Lite'}</strong> on port <strong className="text-cyan-300">{detectedPrinter?.port || 'USB001'}</strong>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleUsbTestPrint}
+                      className="py-2 px-3.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs flex items-center gap-1.5 shadow"
+                    >
+                      <Printer className="w-4 h-4" />
+                      <span>Send USB Test Print</span>
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-800">
+                    <label className="flex items-center gap-2 font-bold text-slate-300 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={printerForm.autoCut}
+                        onChange={(e) => setPrinterForm({ ...printerForm, autoCut: e.target.checked })}
+                        className="w-4 h-4 text-emerald-500 rounded accent-emerald-500"
+                      />
+                      <span>Auto-Cut Paper on Print (GS V)</span>
+                    </label>
+                    <label className="flex items-center gap-2 font-bold text-slate-300 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={printerForm.openCashDrawer}
+                        onChange={(e) => setPrinterForm({ ...printerForm, openCashDrawer: e.target.checked })}
+                        className="w-4 h-4 text-emerald-500 rounded accent-emerald-500"
+                      />
+                      <span>Kick Cash Drawer Pulse (ESC p)</span>
+                    </label>
+                  </div>
+                </div>
+              )}
 
               {/* Serial Connection Settings */}
               {printerForm.printMode === 'serial' && (

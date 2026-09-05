@@ -235,3 +235,12 @@ export const buildZReportEscPosBuffer = (zReportData: any, config: PrinterConfig
 
   return new Uint8Array(bytes);
 };
+
+export const bufferToBase64 = (bytes: Uint8Array): string => {
+  let binary = '';
+  const len = bytes.byteLength;
+  for (let i = 0; i < len; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+};

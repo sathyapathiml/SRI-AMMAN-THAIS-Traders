@@ -1,6 +1,6 @@
 import React from 'react';
 import type { Invoice, StoreSettings } from '../types/pos';
-import { Printer, X, Sparkles } from 'lucide-react';
+import { Printer, X, Sparkles, Zap } from 'lucide-react';
 import { LOGO_DATA_URI } from '../data/logoDataUri';
 
 interface PrintReceiptModalProps {
@@ -9,6 +9,8 @@ interface PrintReceiptModalProps {
   isOpen: boolean;
   onClose: () => void;
   onPrintSerial?: () => void;
+  onPrintUsb?: () => void;
+  detectedPrinter?: { name: string; port: string; driver?: string; isTvs?: boolean } | null;
 }
 
 export const PrintReceiptModal: React.FC<PrintReceiptModalProps> = ({
@@ -16,7 +18,9 @@ export const PrintReceiptModal: React.FC<PrintReceiptModalProps> = ({
   settings,
   isOpen,
   onClose,
-  onPrintSerial
+  onPrintSerial,
+  onPrintUsb,
+  detectedPrinter
 }) => {
   if (!isOpen || !invoice) return null;
 
@@ -162,13 +166,22 @@ export const PrintReceiptModal: React.FC<PrintReceiptModalProps> = ({
             >
               Close
             </button>
+            {onPrintUsb && (
+              <button
+                onClick={onPrintUsb}
+                className="py-2 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-xs font-black text-white flex items-center gap-1.5 shadow-lg shadow-emerald-950/60"
+              >
+                <Zap className="w-4 h-4 text-amber-300" />
+                <span>Direct USB Print ({detectedPrinter?.name || 'TVSE'})</span>
+              </button>
+            )}
             {onPrintSerial && (
               <button
                 onClick={onPrintSerial}
-                className="py-2 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-bold text-white flex items-center gap-1.5 shadow"
+                className="py-2 px-4 rounded-xl bg-purple-600 hover:bg-purple-500 text-xs font-bold text-white flex items-center gap-1.5 shadow"
               >
                 <Printer className="w-4 h-4" />
-                <span>Raw ESC/POS Thermal</span>
+                <span>Raw Serial Print</span>
               </button>
             )}
             <button

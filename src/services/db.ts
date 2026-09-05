@@ -25,7 +25,8 @@ export const defaultPrinterConfig: PrinterConfig = {
   baudRate: 9600,
   autoCut: true,
   openCashDrawer: true,
-  printMode: 'browser'
+  printMode: 'usb',
+  usbPrinterName: 'TVSE RP3200 Lite'
 };
 
 export const sortInventoryCategoryWise = (items: Item[]): Item[] => {

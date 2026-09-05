@@ -230,10 +230,32 @@ export const registerApi = async (username: string, email: string, password: str
       body: JSON.stringify({ username, email, password })
     });
     const data = await res.json();
-    if (!res.ok) return { error: data.error || 'Registration failed' };
     return data;
   } catch (err: any) {
     return { error: err.message || 'Connection error to authentication server' };
+  }
+};
+
+export const fetchDetectedPrinters = async (): Promise<{ printers: Array<{ name: string; port: string; driver: string; isTvs: boolean }>; defaultPrinter: { name: string; port: string; driver: string; isTvs: boolean } | null }> => {
+  try {
+    const res = await fetch(`${API_BASE}/printers`);
+    if (res.ok) return await res.json();
+    return { printers: [], defaultPrinter: null };
+  } catch {
+    return { printers: [], defaultPrinter: null };
+  }
+};
+
+export const printViaUsbApi = async (printerName: string, base64Bytes: string): Promise<boolean> => {
+  try {
+    const res = await fetch(`${API_BASE}/print/usb`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ printerName, base64Bytes })
+    });
+    return res.ok;
+  } catch {
+    return false;
   }
 };
 

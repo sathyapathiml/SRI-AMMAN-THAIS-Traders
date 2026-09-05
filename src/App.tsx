@@ -44,8 +44,11 @@ import {
   postLanExpense,
   deleteLanExpense,
   resetLanInvoices,
-  importLanInventory
+  importLanInventory,
+  fetchDetectedPrinters,
+  printViaUsbApi
 } from './services/api';
+import { buildEscPosBuffer, bufferToBase64 } from './services/escpos';
 
 import { HeaderBar } from './components/HeaderBar';
 import { BillingTable } from './components/BillingTable';
@@ -87,6 +90,7 @@ export function App() {
   const [heldBills, setHeldBills] = useState<HeldBill[]>(() => getStoredHeldBills());
   const [settings, setSettings] = useState<StoreSettings>(() => getStoredSettings());
   const [printerConfig, setPrinterConfig] = useState<PrinterConfig>(() => getStoredPrinterConfig());
+  const [detectedPrinter, setDetectedPrinter] = useState<{ name: string; port: string; driver?: string; isTvs?: boolean } | null>(null);
 
   // Direct Admin Access on Main System (localhost), Direct Worker Access on Other Counter PCs
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
@@ -209,6 +213,38 @@ export function App() {
     const timer = setInterval(syncWithLanServer, 4000);
     return () => clearInterval(timer);
   }, []);
+
+  // Detect Windows USB Printers on mount
+  useEffect(() => {
+    fetchDetectedPrinters().then(res => {
+      if (res.defaultPrinter) {
+        setDetectedPrinter(res.defaultPrinter);
+        if (!printerConfig.usbPrinterName) {
+          setPrinterConfig(prev => ({
+            ...prev,
+            usbPrinterName: res.defaultPrinter?.name || 'TVSE RP3200 Lite'
+          }));
+        }
+      }
+    });
+  }, []);
+
+  const handlePrintUsb = async (inv: Invoice) => {
+    try {
+      const escPosBytes = buildEscPosBuffer(inv, settings, printerConfig.autoCut, printerConfig.openCashDrawer);
+      const base64 = bufferToBase64(escPosBytes);
+      const targetPrinter = detectedPrinter?.name || printerConfig.usbPrinterName || 'TVSE RP3200 Lite';
+      const ok = await printViaUsbApi(targetPrinter, base64);
+      if (ok) {
+        setToast({ message: `Receipt sent to ${targetPrinter} over USB!`, type: 'success' });
+      } else {
+        setToast({ message: 'USB print failed. Ensure printer is connected & turned on.', type: 'error' });
+      }
+    } catch (err: any) {
+      console.error(err);
+      setToast({ message: 'USB print error: ' + err.message, type: 'error' });
+    }
+  };
 
   // Global Keyboard Shortcuts Listener
   useEffect(() => {
@@ -511,7 +547,13 @@ export function App() {
       confetti({ particleCount: 60, spread: 70, origin: { y: 0.6 } });
     } catch {}
 
-    if (printerConfig.printMode === 'serial') {
+    if (printerConfig.printMode === 'usb') {
+      try {
+        await handlePrintUsb(finalInvoice);
+      } catch (err) {
+        console.warn('USB print fallback to browser modal receipt', err);
+      }
+    } else if (printerConfig.printMode === 'serial') {
       try {
         await printInvoiceViaSerial(finalInvoice, settings, printerConfig);
       } catch (err) {
@@ -674,8 +716,9 @@ export function App() {
         onOpenPettyExpenses={() => setIsPettyExpensesOpen(true)}
         onOpenDayClosing={() => setIsDayClosingOpen(true)}
         heldBillsCount={heldBills.length}
-        printerConnected={false}
+        printerConnected={Boolean(detectedPrinter)}
         printMode={printerConfig.printMode}
+        detectedPrinter={detectedPrinter}
         searchInputRef={searchInputRef}
         lanConnected={lanConnected}
         lanIp={lanIp}
@@ -768,6 +811,8 @@ export function App() {
         onClose={() => setIsReceiptModalOpen(false)}
         invoice={createdInvoice}
         settings={settings}
+        detectedPrinter={detectedPrinter}
+        onPrintUsb={createdInvoice ? () => handlePrintUsb(createdInvoice) : undefined}
         onPrintSerial={
           printerConfig.printMode === 'serial' && createdInvoice
             ? () => printInvoiceViaSerial(createdInvoice, settings, printerConfig)
@@ -829,6 +874,7 @@ export function App() {
           savePrinterConfigToDB(c);
         }}
         currentUser={currentUser}
+        detectedPrinter={detectedPrinter}
       />
 
       <PettyExpensesModal

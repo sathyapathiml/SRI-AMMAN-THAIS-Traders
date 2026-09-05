@@ -17,7 +17,8 @@ import {
   Wallet,
   ShieldCheck,
   UserCheck,
-  Calculator
+  Calculator,
+  Printer
 } from 'lucide-react';
 
 interface HeaderBarProps {
@@ -33,7 +34,8 @@ interface HeaderBarProps {
   onOpenDayClosing: () => void;
   heldBillsCount: number;
   printerConnected: boolean;
-  printMode: 'serial' | 'browser';
+  printMode: 'usb' | 'serial' | 'browser';
+  detectedPrinter?: { name: string; port: string; driver?: string; isTvs?: boolean } | null;
   searchInputRef: React.RefObject<HTMLInputElement | null>;
   lanConnected: boolean;
   lanIp: string;
@@ -55,6 +57,7 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
   onOpenPettyExpenses,
   onOpenDayClosing,
   heldBillsCount,
+  detectedPrinter,
   searchInputRef,
   lanConnected,
   lanIp,
@@ -439,6 +442,29 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
           <History className="w-3.5 h-3.5 text-purple-400" />
           <span>Bills</span>
         </button>
+
+        {/* Printer Status Indicator */}
+        {detectedPrinter ? (
+          <button
+            onClick={onOpenSettings}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-950/70 border border-emerald-500/50 text-emerald-300 hover:bg-emerald-900/60 transition text-[11px] font-bold shrink-0 shadow-sm"
+            title={`Connected Windows USB Thermal Printer: ${detectedPrinter.name} (${detectedPrinter.port}) - Click to configure`}
+          >
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <Printer className="w-3.5 h-3.5 text-emerald-400" />
+            <span className="hidden xl:inline">{detectedPrinter.name}</span>
+            <span className="xl:hidden">USB Printer</span>
+          </button>
+        ) : (
+          <button
+            onClick={onOpenSettings}
+            className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[11px] font-bold text-slate-300 transition shrink-0"
+            title="Thermal Printer Settings"
+          >
+            <Printer className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="hidden xl:inline">3" Printer</span>
+          </button>
+        )}
 
         {/* Settings */}
         <button

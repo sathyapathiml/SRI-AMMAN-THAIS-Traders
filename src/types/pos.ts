@@ -114,8 +114,9 @@ export interface PrinterConfig {
   baudRate: number;
   autoCut: boolean;
   openCashDrawer: boolean;
-  printMode: 'serial' | 'browser';
+  printMode: 'usb' | 'serial' | 'browser';
   connectedPortName?: string;
+  usbPrinterName?: string;
 }
 
 export interface PettyExpense {

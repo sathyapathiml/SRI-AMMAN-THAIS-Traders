@@ -112,8 +112,12 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               <Printer className="w-4 h-4 text-cyan-400" />
               <span>Thermal Receipt Output:</span>
             </div>
-            <span className="font-mono font-bold text-amber-400 px-2 py-0.5 rounded bg-slate-900 border border-slate-700">
-              {printerConfig.printMode === 'serial' ? 'ESC/POS Web Serial' : 'Browser 80mm Thermal'}
+            <span className="font-mono font-bold text-emerald-400 px-2 py-0.5 rounded bg-slate-900 border border-slate-700">
+              {printerConfig.printMode === 'usb'
+                ? '⚡ Direct USB (TVSE RP3200)'
+                : printerConfig.printMode === 'serial'
+                ? 'ESC/POS Web Serial'
+                : 'Browser 80mm Thermal'}
             </span>
           </div>
 

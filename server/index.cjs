@@ -24,6 +24,8 @@ const getLocalLanIp = () => {
 
 const lanIp = getLocalLanIp();
 
+const printerService = require('./printerService.cjs');
+
 // API Health Check Endpoint
 app.get('/api/health', (req, res) => {
   res.json({
@@ -32,6 +34,30 @@ app.get('/api/health', (req, res) => {
     port: PORT,
     timestamp: new Date().toISOString()
   });
+});
+
+// Windows Printer Detection & Direct USB Print
+app.get('/api/printers', async (req, res) => {
+  try {
+    const data = await printerService.getInstalledPrinters();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message, printers: [], defaultPrinter: null });
+  }
+});
+
+app.post('/api/print/usb', async (req, res) => {
+  try {
+    const { printerName, base64Bytes } = req.body;
+    const targetPrinter = printerName || 'TVSE RP3200 Lite';
+    if (!base64Bytes) {
+      return res.status(400).json({ error: 'base64Bytes required' });
+    }
+    await printerService.printRawToWindowsPrinter(targetPrinter, base64Bytes);
+    res.json({ success: true, message: `Receipt sent to ${targetPrinter}` });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // API Routes
