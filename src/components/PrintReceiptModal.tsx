@@ -34,6 +34,9 @@ export const PrintReceiptModal: React.FC<PrintReceiptModalProps> = ({
             <div className="flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-amber-400" />
               <h3 className="font-bold text-slate-100 text-sm">Invoice Created #{invoice.invoiceNo}</h3>
+              <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">
+                3" Thermal (TVS 80mm)
+              </span>
             </div>
             <button onClick={onClose} className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800">
               <X className="w-5 h-5" />

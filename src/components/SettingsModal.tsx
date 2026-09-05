@@ -233,6 +233,48 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
           ) : (
             <div className="space-y-4 text-xs">
+              {/* TVS RP-3200 Lite 3-Inch Thermal Printer Preset Banner */}
+              <div className="p-3.5 bg-gradient-to-r from-amber-950/40 via-slate-900 to-cyan-950/40 rounded-xl border border-amber-500/40 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Printer className="w-5 h-5 text-amber-400" />
+                    <div>
+                      <div className="font-bold text-white text-sm flex items-center gap-1.5">
+                        <span>TVS RP-3200 Lite</span>
+                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40">3-Inch / 80mm</span>
+                      </div>
+                      <div className="text-[11px] text-slate-400">High-speed 200mm/s 3-inch thermal receipt printer with auto-cutter</div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPrinterForm({
+                        ...printerForm,
+                        baudRate: 9600,
+                        autoCut: true,
+                        openCashDrawer: true,
+                        printMode: 'browser'
+                      });
+                      setStatusMsg('TVS RP-3200 Lite 3-inch preset loaded!');
+                      setTimeout(() => setStatusMsg(''), 3000);
+                    }}
+                    className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg text-xs transition shadow flex items-center gap-1 shrink-0"
+                  >
+                    <span>Apply TVS 3-Inch Preset</span>
+                  </button>
+                </div>
+                <div className="text-[11px] text-slate-300 bg-slate-950/60 p-2 rounded-lg border border-slate-800/80 space-y-1">
+                  <div className="font-semibold text-amber-300">💡 Recommended TVS RP-3200 Lite Setup:</div>
+                  <div className="text-slate-400">
+                    • <strong>Windows Driver / Browser Print:</strong> Set Paper Size to <span className="text-white font-mono">80mm × Receipt</span> or <span className="text-white font-mono">Roll 80mm</span>, Margins: <span className="text-white">None</span>, uncheck <span className="text-white">Headers and footers</span>.
+                  </div>
+                  <div className="text-slate-400">
+                    • <strong>Direct USB / COM Serial:</strong> Switch to "Web Serial ESC/POS", pair USB port at <span className="text-white font-mono">9600 Baud</span> for 1-click silent printing & auto-cutting!
+                  </div>
+                </div>
+              </div>
+
               <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-2">
                 <label className="block font-bold text-slate-400">Thermal Output Method</label>
                 <div className="grid grid-cols-2 gap-3">
