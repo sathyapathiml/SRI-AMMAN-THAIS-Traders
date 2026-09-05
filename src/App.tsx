@@ -63,6 +63,7 @@ import { SettingsModal } from './components/SettingsModal';
 import { PettyExpensesModal } from './components/PettyExpensesModal';
 import { DayClosingModal } from './components/DayClosingModal';
 import { LoginModal } from './components/LoginModal';
+import { PrintableReceipt } from './components/PrintableReceipt';
 
 // Default pre-seeded admin profile for sathyapathi555@gmail.com
 const DEFAULT_ADMIN: User = {
@@ -237,13 +238,15 @@ export function App() {
       const ok = await printViaUsbApi(targetPrinter, base64);
       if (ok) {
         setToast({ message: `Receipt sent to ${targetPrinter} over USB!`, type: 'success' });
-      } else {
-        setToast({ message: 'USB print failed. Ensure printer is connected & turned on.', type: 'error' });
+        return;
       }
     } catch (err: any) {
-      console.error(err);
-      setToast({ message: 'USB print error: ' + err.message, type: 'error' });
+      console.warn('USB direct print attempt failed, falling back to Browser Print', err);
     }
+    // Seamless fallback to Browser Print for Cloud website & local
+    setTimeout(() => {
+      window.print();
+    }, 250);
   };
 
   // Global Keyboard Shortcuts Listener
@@ -552,13 +555,17 @@ export function App() {
         await handlePrintUsb(finalInvoice);
       } catch (err) {
         console.warn('USB print fallback to browser modal receipt', err);
+        setTimeout(() => window.print(), 250);
       }
     } else if (printerConfig.printMode === 'serial') {
       try {
         await printInvoiceViaSerial(finalInvoice, settings, printerConfig);
       } catch (err) {
         console.warn('Serial print fallback to browser modal receipt', err);
+        setTimeout(() => window.print(), 250);
       }
+    } else if (printerConfig.printMode === 'browser') {
+      setTimeout(() => window.print(), 250);
     }
 
     if (!isEstimate) {
@@ -895,6 +902,9 @@ export function App() {
         currentUser={currentUser}
         onOpenLoginModal={() => setIsLoginModalOpen(true)}
       />
+
+      {/* Global 80mm Thermal Printable Receipt (Used by window.print() on Cloud & Local) */}
+      <PrintableReceipt invoice={createdInvoice} settings={settings} />
     </div>
   );
 }

@@ -32,32 +32,170 @@ input:focus, select:focus, button:focus-visible {
   outline-offset: 1px;
 }
 
-/* 80mm ESC/POS Thermal Receipt Print Media Queries */
+/* 80mm (3-Inch) Thermal Receipt Print Styles for TVS RP-3200 Lite */
+@media screen {
+  #printable-receipt,
+  .print-only-container {
+    display: none !important;
+  }
+}
+
 @media print {
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    color: #000 !important;
+    width: 80mm !important;
+    overflow: visible !important;
+  }
+
   body * {
     visibility: hidden;
   }
-  
-  #printable-receipt, #printable-receipt * {
-    visibility: visible;
+
+  #printable-receipt,
+  #printable-receipt * {
+    visibility: visible !important;
+    color: #000 !important;
   }
 
   #printable-receipt {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 80mm;
-    margin: 0;
-    padding: 2mm 4mm;
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 12px;
-    color: #000;
-    background: #fff;
-    line-height: 1.2;
+    display: block !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 78mm !important;
+    margin: 0 !important;
+    padding: 2mm 3mm 6mm 3mm !important;
+    font-family: 'Courier New', Courier, monospace !important;
+    font-size: 11px !important;
+    line-height: 1.25 !important;
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  .receipt-header {
+    text-align: center;
+    margin-bottom: 4px;
+  }
+
+  .receipt-logo-wrap {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 4px;
+  }
+
+  .receipt-logo-img {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    margin: 0 auto;
+  }
+
+  .receipt-store-name {
+    font-size: 14px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .receipt-tagline {
+    font-size: 9px;
+    font-weight: bold;
+    color: #333;
+  }
+
+  .receipt-address {
+    font-size: 9px;
+    color: #444;
+  }
+
+  .receipt-phone {
+    font-size: 10px;
+    font-weight: bold;
+  }
+
+  .receipt-gstin {
+    font-size: 10px;
+    font-weight: bold;
+  }
+
+  .receipt-divider-dashed {
+    border-bottom: 1px dashed #000;
+    margin: 4px 0;
+  }
+
+  .receipt-divider-double {
+    border-bottom: 2px solid #000;
+    margin: 4px 0;
+  }
+
+  .receipt-meta {
+    font-size: 10px;
+    margin: 3px 0;
+  }
+
+  .receipt-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1px;
+  }
+
+  .receipt-customer {
+    font-size: 9px;
+    font-weight: bold;
+  }
+
+  .receipt-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10px;
+  }
+
+  .receipt-table-head th {
+    border-bottom: 1px solid #000;
+    padding-bottom: 2px;
+    font-weight: bold;
+  }
+
+  .receipt-table-row td {
+    padding: 2px 0;
+  }
+
+  .receipt-item-name {
+    padding-right: 4px;
+    max-width: 38mm;
+    word-break: break-word;
+    font-weight: 600;
+  }
+
+  .receipt-totals {
+    font-size: 10px;
+    margin: 3px 0;
+  }
+
+  .receipt-grand-total {
+    font-size: 14px;
+    font-weight: 900;
+    padding-top: 2px;
+  }
+
+  .receipt-footer {
+    text-align: center;
+    font-size: 9px;
+    margin-top: 5px;
+  }
+
+  .receipt-thankyou {
+    font-weight: bold;
+    font-size: 10px;
+    margin-top: 2px;
   }
 
   @page {
     size: 80mm auto;
-    margin: 0mm;
+    margin: 0mm !important;
   }
 }

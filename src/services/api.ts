@@ -237,25 +237,72 @@ export const registerApi = async (username: string, email: string, password: str
 };
 
 export const fetchDetectedPrinters = async (): Promise<{ printers: Array<{ name: string; port: string; driver: string; isTvs: boolean }>; defaultPrinter: { name: string; port: string; driver: string; isTvs: boolean } | null }> => {
+  // 1. Try current API_BASE
   try {
     const res = await fetch(`${API_BASE}/printers`);
-    if (res.ok) return await res.json();
-    return { printers: [], defaultPrinter: null };
-  } catch {
-    return { printers: [], defaultPrinter: null };
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.defaultPrinter) return data;
+    }
+  } catch {}
+
+  // 2. If on Cloud website, try local billing PC agent
+  const isCloud = typeof window !== 'undefined' && 
+    window.location.hostname !== 'localhost' && 
+    window.location.hostname !== '127.0.0.1';
+
+  if (isCloud) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 1500);
+      const res = await fetch('http://127.0.0.1:5000/api/printers', { signal: controller.signal });
+      clearTimeout(timeoutId);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.defaultPrinter) return data;
+      }
+    } catch {}
   }
+
+  // 3. Fallback: TVSE RP3200 Lite (Standard 80mm Windows driver)
+  return {
+    printers: [{ name: 'TVSE RP3200 Lite', port: 'USB001', driver: 'TVSE RP3200 Lite', isTvs: true }],
+    defaultPrinter: { name: 'TVSE RP3200 Lite', port: 'USB001', driver: 'TVSE RP3200 Lite', isTvs: true }
+  };
 };
 
 export const printViaUsbApi = async (printerName: string, base64Bytes: string): Promise<boolean> => {
+  // 1. Try current API_BASE
   try {
     const res = await fetch(`${API_BASE}/print/usb`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ printerName, base64Bytes })
     });
-    return res.ok;
-  } catch {
-    return false;
+    if (res.ok) return true;
+  } catch {}
+
+  // 2. If on Cloud website, try local billing PC agent at localhost:5000
+  const isCloud = typeof window !== 'undefined' && 
+    window.location.hostname !== 'localhost' && 
+    window.location.hostname !== '127.0.0.1';
+
+  if (isCloud) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2000);
+      const res = await fetch('http://127.0.0.1:5000/api/print/usb', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ printerName, base64Bytes }),
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      if (res.ok) return true;
+    } catch {}
   }
+
+  return false;
 };
+
 
