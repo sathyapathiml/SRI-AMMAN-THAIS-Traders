@@ -2,14 +2,22 @@ import type { Item } from '../types/pos';
 
 export const getCategoryPrefix = (category: string): string => {
   const cat = (category || '').toLowerCase().trim();
-  if (cat.includes('sparkler')) return 'SPK';
+  if (cat.includes('matchbox')) return 'MBX';
+  if (cat.includes('sparkler') || cat.includes('spark')) return 'SPK';
   if (cat.includes('chakkar') || cat.includes('wheel')) return 'CHK';
-  if (cat.includes('pot') || cat.includes('fountain')) return 'FNT';
+  if (cat.includes('pot')) return 'POT';
+  if (cat.includes('fountain')) return 'FNT';
+  if (cat.includes('pencil')) return 'PCL';
+  if (cat.includes('whip') || cat.includes('saattai')) return 'WHP';
   if (cat.includes('rocket')) return 'RKT';
-  if (cat.includes('sound') || cat.includes('cracker') || cat.includes('wala') || cat.includes('bomb')) return 'SND';
-  if (cat.includes('aerial') || cat.includes('shot') || cat.includes('fancy') || cat.includes('cake')) return 'ARL';
+  if (cat.includes('bomb')) return 'BMB';
+  if (cat.includes('wala') || cat.includes('chorsa') || cat.includes('garland')) return 'WLA';
+  if (cat.includes('sound') || cat.includes('single')) return 'SND';
+  if (cat.includes('aerial') || cat.includes('shot') || cat.includes('fancy') || cat.includes('cake') || cat.includes('tree')) return 'SHT';
+  if (cat.includes('gun') || cat.includes('cap')) return 'GUN';
   if (cat.includes('gift') || cat.includes('box')) return 'GFT';
-  if (cat.includes('novelty') || cat.includes('pencil') || cat.includes('star')) return 'NVL';
+  if (cat.includes('flash') || cat.includes('smoke')) return 'FLS';
+  if (cat.includes('kid') || cat.includes('novelty')) return 'KID';
 
   // Default fallback: First 3 letters of category uppercase
   const clean = category.replace(/[^a-zA-Z]/g, '').toUpperCase();

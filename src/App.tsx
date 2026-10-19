@@ -303,9 +303,9 @@ export function App() {
     setCartItems(prev =>
       prev.map(cartItem => {
         const masterItem = inventory.find(i => i.itemCode === cartItem.itemCode);
-        const newPrice = (newTier === 'wholesale' && masterItem?.wholesalePrice && masterItem.wholesalePrice > 0)
-          ? masterItem.wholesalePrice
-          : (masterItem?.mrp || cartItem.mrp);
+        const isWholesale = newTier === 'wholesale' && typeof masterItem?.wholesalePrice === 'number' && masterItem.wholesalePrice > 0;
+        const newPrice = isWholesale ? (masterItem?.wholesalePrice ?? cartItem.mrp) : (masterItem?.mrp || cartItem.mrp);
+        const discountVal = isWholesale ? 0 : (masterItem?.defaultDiscountValue ?? cartItem.discountValue);
 
         return calculateLineItem(
           cartItem.itemCode,
@@ -313,7 +313,7 @@ export function App() {
           newPrice,
           cartItem.qty,
           cartItem.stockQty,
-          cartItem.discountValue,
+          discountVal,
           cartItem.discountType,
           cartItem.gstRate,
           cartItem.isGstApplicable,
@@ -323,13 +323,22 @@ export function App() {
     );
   };
 
+  // Auto-dismiss toast
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 2500);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
+
   // Cart actions
-  const handleSelectItem = (item: Item) => {
+  const handleSelectItem = (item: Item, qty = 1) => {
+    const addQty = Math.max(1, qty);
     setCartItems(prevItems => {
       const existingIdx = prevItems.findIndex(i => i.itemCode === item.itemCode);
       if (existingIdx >= 0) {
         const existing = prevItems[existingIdx];
-        const newQty = existing.qty + 1;
+        const newQty = existing.qty + addQty;
         const updated = calculateLineItem(
           existing.itemCode,
           existing.itemName,
@@ -346,9 +355,45 @@ export function App() {
         newArr[existingIdx] = updated;
         return newArr;
       } else {
-        const newItem = createCartItemFromItem(item, 1, priceTier);
+        const newItem = createCartItemFromItem(item, addQty, priceTier);
         return [...prevItems, newItem];
       }
+    });
+    setToast({ message: `Added ${addQty}x "${item.itemName}" to cart`, type: 'success' });
+  };
+
+  const handleSelectMultipleItems = (itemsWithQty: { item: Item; qty: number }[]) => {
+    if (!itemsWithQty || itemsWithQty.length === 0) return;
+    setCartItems(prevItems => {
+      let currentItems = [...prevItems];
+      for (const { item, qty } of itemsWithQty) {
+        const addQty = Math.max(1, qty || 1);
+        const existingIdx = currentItems.findIndex(i => i.itemCode === item.itemCode);
+        if (existingIdx >= 0) {
+          const existing = currentItems[existingIdx];
+          const newQty = existing.qty + addQty;
+          currentItems[existingIdx] = calculateLineItem(
+            existing.itemCode,
+            existing.itemName,
+            existing.mrp,
+            newQty,
+            existing.stockQty,
+            existing.discountValue,
+            existing.discountType,
+            existing.gstRate,
+            existing.isGstApplicable,
+            existing.id
+          );
+        } else {
+          currentItems.push(createCartItemFromItem(item, addQty, priceTier));
+        }
+      }
+      return currentItems;
+    });
+    const totalQty = itemsWithQty.reduce((sum, i) => sum + (i.qty || 1), 0);
+    setToast({
+      message: `Added ${itemsWithQty.length} items (${totalQty} total pcs) to bill!`,
+      type: 'success'
     });
   };
 
@@ -711,6 +756,7 @@ export function App() {
       <HeaderBar
         inventory={inventory}
         onSelectItem={handleSelectItem}
+        onSelectMultipleItems={handleSelectMultipleItems}
         onNewBill={handleNewBill}
         onOpenCheckout={() => {
           setIsEstimateMode(false);

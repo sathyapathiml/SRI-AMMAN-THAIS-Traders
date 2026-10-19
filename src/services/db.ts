@@ -13,12 +13,12 @@ const STORAGE_KEYS = {
 export const defaultStoreSettings: StoreSettings = {
   storeName: 'SRI AMMAN THAIS Traders',
   storeTagline: 'Whole Sale & Retail Crackers Superstore',
-  addressLine1: 'Main Market Road, Near Town Clock Tower',
-  addressLine2: 'Sivakasi / Chennai, Tamil Nadu - 600001',
-  phone: '+91 98765 43210 / 044-2345678',
-  gstin: '33AAAAA0000A1Z5',
+  addressLine1: '30/11 B, Periyavilai',
+  addressLine2: 'Eathamozhi, Kanyakumari - 629501',
+  phone: '+91 8778436718 / +91 8903936798',
+  gstin: '33ELHPG2737NIZV',
   invoicePrefix: 'CRK-2026-',
-  receiptFooterNote: 'Wish You A Happy & Safe Diwali! No Return / No Exchange.'
+  receiptFooterNote: 'Wish You A Happy & Safe Diwali!'
 };
 
 export const defaultPrinterConfig: PrinterConfig = {

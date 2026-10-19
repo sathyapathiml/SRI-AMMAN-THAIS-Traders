@@ -1,4 +1,5 @@
 import type { Invoice, StoreSettings, PrinterConfig } from '../types/pos';
+import { getLogoEscPosBytes } from '../data/logoEscPos';
 
 // ESC/POS Command Byte Constants
 const ESC = 0x1B;
@@ -87,6 +88,17 @@ export const buildEscPosBuffer = (invoice: Invoice, settings: StoreSettings, aut
 
   // 3. Header
   push(ESC_POS_COMMANDS.ALIGN_CENTER);
+
+  // Print Official Sri Amman Thais Traders Logo Bitmap on Thermal Receipt
+  try {
+    const logoBytes = getLogoEscPosBytes();
+    if (logoBytes && logoBytes.length > 0) {
+      push(logoBytes);
+    }
+  } catch (e) {
+    console.warn('Could not inject ESC/POS logo bytes:', e);
+  }
+
   push(ESC_POS_COMMANDS.BOLD_ON);
   push(ESC_POS_COMMANDS.DOUBLE_HEIGHT_ON);
 
@@ -194,6 +206,16 @@ export const buildZReportEscPosBuffer = (zReportData: any, config: PrinterConfig
 
   push(ESC_POS_COMMANDS.INIT);
   push(ESC_POS_COMMANDS.ALIGN_CENTER);
+
+  try {
+    const logoBytes = getLogoEscPosBytes();
+    if (logoBytes && logoBytes.length > 0) {
+      push(logoBytes);
+    }
+  } catch (e) {
+    console.warn('Could not inject ESC/POS logo bytes in Z-Report:', e);
+  }
+
   push(ESC_POS_COMMANDS.BOLD_ON);
   push(ESC_POS_COMMANDS.DOUBLE_HEIGHT_ON);
   printText(`${zReportData.storeName}\n`);

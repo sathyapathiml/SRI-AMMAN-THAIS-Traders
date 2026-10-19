@@ -62,9 +62,9 @@ export const calculateLineItem = (
 };
 
 export const createCartItemFromItem = (item: Item, qty = 1, priceTier: PriceTier = 'retail'): CartLineItem => {
-  const price = (priceTier === 'wholesale' && item.wholesalePrice && item.wholesalePrice > 0)
-    ? item.wholesalePrice
-    : item.mrp;
+  const isWholesale = priceTier === 'wholesale' && typeof item.wholesalePrice === 'number' && item.wholesalePrice > 0;
+  const price = isWholesale ? (item.wholesalePrice ?? item.mrp) : item.mrp;
+  const discountVal = isWholesale ? 0 : item.defaultDiscountValue;
 
   return calculateLineItem(
     item.itemCode,
@@ -72,7 +72,7 @@ export const createCartItemFromItem = (item: Item, qty = 1, priceTier: PriceTier
     price,
     qty,
     item.stockQty,
-    item.defaultDiscountValue,
+    discountVal,
     item.defaultDiscountType,
     item.defaultGstRate,
     item.isGstApplicable

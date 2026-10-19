@@ -5,34 +5,31 @@ const fs = require('fs');
 const dbPath = path.join(__dirname, 'billing.db');
 const db = new sqlite3.Database(dbPath);
 
-// Default Fireworks Inventory Catalog
-const initialInventory = [
-  { id: '1', itemCode: 'CRK001', itemName: '10cm Electric Sparklers (10s)', category: 'Sparklers', mrp: 80, defaultDiscountValue: 10, defaultDiscountType: 'percent', defaultGstRate: 18, isGstApplicable: 1, stockQty: 150 },
-  { id: '2', itemCode: 'CRK002', itemName: '30cm Deluxe Multi-Color Sparklers (10s)', category: 'Sparklers', mrp: 220, defaultDiscountValue: 15, defaultDiscountType: 'percent', defaultGstRate: 18, isGstApplicable: 1, stockQty: 120 },
-  { id: '3', itemCode: 'CRK003', itemName: '50cm Crackling Sparklers Giant (5s)', category: 'Sparklers', mrp: 350, defaultDiscountValue: 20, defaultDiscountType: 'percent', defaultGstRate: 18, isGstApplicable: 1, stockQty: 85 },
-  { id: '4', itemCode: 'CRK004', itemName: 'Special Flower Pots - Big (10s)', category: 'Fountains', mrp: 450, defaultDiscountValue: 15, defaultDiscountType: 'percent', defaultGstRate: 18, isGstApplicable: 1, stockQty: 90 },
-  { id: '5', itemCode: 'CRK005', itemName: 'Color Koti Fountain Gold (5s)', category: 'Fountains', mrp: 320, defaultDiscountValue: 10, defaultDiscountType: 'percent', defaultGstRate: 18, isGstApplicable: 1, stockQty: 110 },
-  { id: '6', itemCode: 'CRK006', itemName: 'Giant Ground Chakkars Special (10s)', category: 'Chakkars', mrp: 280, defaultDiscountValue: 10, defaultDiscountType: 'percent', defaultGstRate: 18, isGstApplicable: 1, stockQty: 140 },
-  { id: '7', itemCode: 'CRK007', itemName: 'Whistling Ground Wheel Deluxe (5s)', category: 'Chakkars', mrp: 390, defaultDiscountValue: 15, defaultDiscountType: 'percent', defaultGstRate: 18, isGstApplicable: 1, stockQty: 75 },
-  { id: '8', itemCode: 'CRK008', itemName: 'Atom Bomb Green Thunder (10s)', category: 'Sound Crackers', mrp: 260, defaultDiscountValue: 10, defaultDiscountType: 'percent', defaultGstRate: 28, isGstApplicable: 1, stockQty: 100 },
-  { id: '9', itemCode: 'CRK009', itemName: '1000 Wala Red Garland Crackers', category: 'Sound Crackers', mrp: 1450, defaultDiscountValue: 20, defaultDiscountType: 'percent', defaultGstRate: 28, isGstApplicable: 1, stockQty: 45 },
-  { id: '10', itemCode: 'CRK010', itemName: 'Deluxe Sky Rockets Pack (10s)', category: 'Rockets', mrp: 480, defaultDiscountValue: 15, defaultDiscountType: 'percent', defaultGstRate: 18, isGstApplicable: 1, stockQty: 60 },
-  { id: '11', itemCode: 'CRK011', itemName: '12-Shot Fancy Aerial Repeater Cake', category: 'Aerial Shots', mrp: 950, defaultDiscountValue: 20, defaultDiscountType: 'percent', defaultGstRate: 28, isGstApplicable: 1, stockQty: 35 },
-  { id: '12', itemCode: 'CRK012', itemName: '30-Shot Multi Color Fireworks Spectacle', category: 'Aerial Shots', mrp: 1850, defaultDiscountValue: 25, defaultDiscountType: 'percent', defaultGstRate: 28, isGstApplicable: 1, stockQty: 25 },
-  { id: '13', itemCode: 'CRK013', itemName: 'Peacock Feather Fountain Large (3s)', category: 'Fountains', mrp: 380, defaultDiscountValue: 50, defaultDiscountType: 'flat', defaultGstRate: 18, isGstApplicable: 1, stockQty: 80 },
-  { id: '14', itemCode: 'CRK014', itemName: 'Diwali Grand Family Gift Box (25 Items)', category: 'Gift Boxes', mrp: 2990, defaultDiscountValue: 30, defaultDiscountType: 'percent', defaultGstRate: 18, isGstApplicable: 1, stockQty: 30 },
-  { id: '15', itemCode: 'CRK015', itemName: 'Twinkling Star Sparkler Pencils (10s)', category: 'Novelty', mrp: 120, defaultDiscountValue: 10, defaultDiscountType: 'flat', defaultGstRate: 18, isGstApplicable: 0, stockQty: 200 }
-];
+const { items } = require('./priceListData.cjs');
+
+const initialInventory = items.map(item => ({
+  id: item.id,
+  itemCode: item.itemCode,
+  itemName: item.itemName,
+  category: item.category,
+  mrp: item.mrp,
+  wholesalePrice: item.wholesalePrice,
+  defaultDiscountValue: 81,
+  defaultDiscountType: 'percent',
+  defaultGstRate: 0,
+  isGstApplicable: 0,
+  stockQty: 100
+}));
 
 const defaultStoreSettings = {
-  storeName: 'SRI LAKSHMI FIREWORKS & CRACKERS',
+  storeName: 'SRI AMMAN THAIS Traders',
   storeTagline: 'Whole Sale & Retail Crackers Superstore',
-  addressLine1: 'Main Market Road, Near Town Clock Tower',
-  addressLine2: 'Sivakasi / Chennai, Tamil Nadu - 600001',
-  phone: '+91 98765 43210 / 044-2345678',
-  gstin: '33AAAAA0000A1Z5',
+  addressLine1: '30/11 B, Periyavilai',
+  addressLine2: 'Eathamozhi, Kanyakumari - 629501',
+  phone: '+91 8778436718 / +91 8903936798',
+  gstin: '33ELHPG2737NIZV',
   invoicePrefix: 'CRK-2026-',
-  receiptFooterNote: 'Wish You A Happy & Safe Diwali! No Return / No Exchange.'
+  receiptFooterNote: 'Wish You A Happy & Safe Diwali!'
 };
 
 // Initialize Tables

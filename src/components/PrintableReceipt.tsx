@@ -19,6 +19,10 @@ export const PrintableReceipt: React.FC<PrintableReceiptProps> = ({ invoice, set
             src={LOGO_DATA_URI}
             alt={settings.storeName}
             className="receipt-logo-img"
+            width="100"
+            height="100"
+            loading="eager"
+            decoding="sync"
           />
         </div>
         <div className="receipt-store-name">{settings.storeName}</div>

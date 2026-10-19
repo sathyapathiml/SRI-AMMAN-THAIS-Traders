@@ -18,12 +18,22 @@ import {
   ShieldCheck,
   UserCheck,
   Calculator,
-  Printer
+  Printer,
+  X,
+  Plus,
+  Minus,
+  CheckSquare,
+  Square,
+  ShoppingCart,
+  Layers,
+  Filter,
+  Check
 } from 'lucide-react';
 
 interface HeaderBarProps {
   inventory: Item[];
-  onSelectItem: (item: Item) => void;
+  onSelectItem: (item: Item, qty?: number) => void;
+  onSelectMultipleItems?: (itemsWithQty: { item: Item; qty: number }[]) => void;
   onNewBill: () => void;
   onOpenCheckout: () => void;
   onOpenHeldBills: () => void;
@@ -46,9 +56,38 @@ interface HeaderBarProps {
   onLogout: () => void;
 }
 
+// Parse smart search syntax with quantity like "5*101" or "101*5" or "5 x 101"
+const parseSearchInput = (input: string): { searchTerm: string; parsedQty: number } => {
+  const trimmed = input.trim();
+  if (!trimmed) return { searchTerm: '', parsedQty: 1 };
+
+  // Prefix match: "5*101" or "5 * 101" or "5x101" or "5 x 101"
+  const prefixMatch = trimmed.match(/^(\d+)\s*[*xX]\s*(.+)$/);
+  if (prefixMatch) {
+    const qty = parseInt(prefixMatch[1], 10);
+    const term = prefixMatch[2].trim();
+    if (qty > 0 && term) {
+      return { searchTerm: term, parsedQty: qty };
+    }
+  }
+
+  // Suffix match: "101*5" or "101 * 5" or "101x5" or "101 x 5"
+  const suffixMatch = trimmed.match(/^(.+?)\s*[*xX]\s*(\d+)$/);
+  if (suffixMatch) {
+    const term = suffixMatch[1].trim();
+    const qty = parseInt(suffixMatch[2], 10);
+    if (qty > 0 && term) {
+      return { searchTerm: term, parsedQty: qty };
+    }
+  }
+
+  return { searchTerm: trimmed, parsedQty: 1 };
+};
+
 export const HeaderBar: React.FC<HeaderBarProps> = ({
   inventory,
   onSelectItem,
+  onSelectMultipleItems,
   onNewBill,
   onOpenHeldBills,
   onOpenInventory,
@@ -71,29 +110,80 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
   const [results, setResults] = useState<Item[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
-  const [lastAddedId, setLastAddedId] = useState<string | null>(null);
+  const [lastAddedInfo, setLastAddedInfo] = useState<{ id: string; qty: number } | null>(null);
+  const [itemQuantities, setItemQuantities] = useState<Record<string, number>>({});
+  const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(new Set());
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const itemRefs = React.useRef<(HTMLDivElement | null)[]>([]);
 
-  // Filter items matching itemCode or itemName via case-insensitive regex
+  // Unique list of categories in inventory for category-wise quick selection
+  const categories = React.useMemo(() => {
+    const set = new Set<string>();
+    inventory.forEach(i => {
+      if (i.category) set.add(i.category.trim());
+    });
+    return ['All', ...Array.from(set).sort()];
+  }, [inventory]);
+
+  // Parse smart quantity syntax like "5*101" or "101*5"
+  const { searchTerm, parsedQty } = React.useMemo(() => {
+    return parseSearchInput(query);
+  }, [query]);
+
+  const getItemQty = (itemId: string) => itemQuantities[itemId] || parsedQty || 1;
+  const setItemQty = (itemId: string, qty: number) => {
+    setItemQuantities(prev => ({ ...prev, [itemId]: Math.max(1, qty) }));
+  };
+
+  const toggleSelectItem = (id: string) => {
+    setSelectedItemIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const selectAllVisible = () => {
+    setSelectedItemIds(prev => {
+      const next = new Set(prev);
+      results.forEach(i => next.add(i.id));
+      return next;
+    });
+  };
+
+  const deselectAll = () => {
+    setSelectedItemIds(new Set());
+  };
+
+  // Filter items matching searchTerm and selectedCategory
   useEffect(() => {
-    if (!query.trim()) {
+    if (!searchTerm.trim() && !isOpen) {
       setResults([]);
-      setIsOpen(false);
       return;
     }
 
     try {
-      const regex = new RegExp(query.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
-      const matched = inventory.filter(
-        item => regex.test(item.itemCode) || regex.test(item.itemName) || regex.test(item.category)
-      );
-      setResults(matched.slice(0, 50)); // Up to 50 matches
+      let filtered = inventory;
+
+      if (selectedCategory !== 'All') {
+        filtered = filtered.filter(i => i.category === selectedCategory);
+      }
+
+      if (searchTerm.trim()) {
+        const escaped = searchTerm.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(escaped, 'i');
+        filtered = filtered.filter(
+          item => regex.test(item.itemCode) || regex.test(item.itemName) || regex.test(item.category)
+        );
+      }
+
+      setResults(filtered.slice(0, 100)); // Up to 100 items for multi-selection
       setSelectedIndex(0);
-      setIsOpen(true);
     } catch {
       setResults([]);
     }
-  }, [query, inventory]);
+  }, [searchTerm, selectedCategory, inventory, isOpen]);
 
   const searchContainerRef = React.useRef<HTMLDivElement>(null);
 
@@ -125,12 +215,62 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
     }
   }, [selectedIndex, isOpen]);
 
-  const handleSelect = (item: Item, keepOpen = false) => {
-    onSelectItem(item);
-    if (!keepOpen) {
+  // Selected items with their quantities for bulk adding
+  const selectedItemsList = React.useMemo(() => {
+    return Array.from(selectedItemIds).map(id => {
+      const item = inventory.find(i => i.id === id);
+      return item ? { item, qty: getItemQty(id) } : null;
+    }).filter((x): x is { item: Item; qty: number } => x !== null);
+  }, [selectedItemIds, itemQuantities, parsedQty, inventory]);
+
+  const selectedTotalQty = React.useMemo(() => {
+    return selectedItemsList.reduce((sum, i) => sum + i.qty, 0);
+  }, [selectedItemsList]);
+
+  const selectedTotalPrice = React.useMemo(() => {
+    return selectedItemsList.reduce((sum, { item, qty }) => {
+      const price = (priceTier === 'wholesale' && item.wholesalePrice && item.wholesalePrice > 0)
+        ? item.wholesalePrice
+        : item.mrp;
+      return sum + (price * qty);
+    }, 0);
+  }, [selectedItemsList, priceTier]);
+
+  const handleAddSelectedItems = () => {
+    if (selectedItemsList.length === 0) return;
+    if (onSelectMultipleItems) {
+      onSelectMultipleItems(selectedItemsList);
+    } else {
+      selectedItemsList.forEach(({ item, qty }) => onSelectItem(item, qty));
+    }
+    setSelectedItemIds(new Set());
+    setQuery('');
+    setIsOpen(false);
+    setSelectedIndex(0);
+    setItemQuantities({});
+    if (searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  };
+
+  const handleSelect = (item: Item, qty?: number, closeAndClear = true) => {
+    const finalQty = qty !== undefined ? qty : getItemQty(item.id);
+    onSelectItem(item, finalQty);
+    setLastAddedInfo({ id: item.id, qty: finalQty });
+    setTimeout(() => setLastAddedInfo(null), 1500);
+
+    if (closeAndClear) {
       setQuery('');
       setIsOpen(false);
+      setSelectedIndex(0);
+      setItemQuantities({});
+      setSelectedItemIds(new Set());
+    } else {
+      if (searchInputRef.current) {
+        searchInputRef.current.select();
+      }
     }
+
     if (searchInputRef.current) {
       searchInputRef.current.focus();
     }
@@ -145,16 +285,27 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
       setSelectedIndex(prev => (prev > 0 ? prev - 1 : results.length - 1));
     } else if (e.key === 'Enter') {
       e.preventDefault();
+      // If multiple items are checked, Enter adds all checked items!
+      if (selectedItemIds.size > 0) {
+        handleAddSelectedItems();
+        return;
+      }
       if (results.length > 0) {
-        const exactCodeMatch = results.find(i => i.itemCode.toLowerCase() === query.trim().toLowerCase());
-        if (exactCodeMatch) {
-          handleSelect(exactCodeMatch, true); // Keep open on Enter so cashier can add more
-        } else if (results[selectedIndex]) {
-          handleSelect(results[selectedIndex], true); // Keep open on Enter
+        const exactCodeMatch = results.find(
+          i => i.itemCode.toLowerCase() === searchTerm.toLowerCase()
+        );
+        const targetItem = exactCodeMatch || results[selectedIndex] || results[0];
+        if (targetItem) {
+          const qty = getItemQty(targetItem.id);
+          handleSelect(targetItem, qty, true);
         }
       }
     } else if (e.key === 'Escape') {
+      e.preventDefault();
       setIsOpen(false);
+      setQuery('');
+      setItemQuantities({});
+      setSelectedItemIds(new Set());
     }
   };
 
@@ -209,103 +360,335 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
         </div>
       </div>
 
-      {/* Center: Global Touch & Keyboard Search Bar */}
-      <div className="relative flex-1 max-w-xl" ref={searchContainerRef}>
-        <div className="relative flex items-center">
-          <Search className="w-4 h-4 md:w-5 md:h-5 absolute left-3 text-slate-400 pointer-events-none" />
-          <input
-            ref={searchInputRef}
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={handleKeyDown}
-            onFocus={() => query.trim() && setIsOpen(true)}
-            placeholder="Scan or Search Item / Code..."
-            className="w-full bg-slate-950 border-2 border-slate-700 focus:border-cyan-500 text-slate-100 text-xs md:text-sm font-semibold rounded-xl pl-9 md:pl-10 pr-4 py-2 outline-none transition-all placeholder:text-slate-500 shadow-inner"
-          />
-        </div>
-
-        {/* Wide View Auto-complete Dropdown Panel */}
-        {isOpen && results.length > 0 && (
-          <div className="absolute left-0 right-0 md:w-[720px] lg:w-[850px] md:-left-36 lg:-left-48 top-full mt-1.5 bg-slate-900 border-2 border-cyan-500/50 rounded-2xl shadow-2xl overflow-hidden z-50 divide-y divide-slate-800/80 max-h-96 overflow-y-auto backdrop-blur-md">
-            <div className="bg-slate-950 px-3 py-2 border-b border-slate-800 flex items-center justify-between text-xs font-bold text-slate-300">
-              <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span>{results.length} Items (Click <strong className="text-cyan-400">+ Add</strong> on any item to add multiple items)</span>
+      {/* Center: Global Touch & Keyboard Search Bar with Multi-Select Catalog */}
+      <div className="relative flex-1 max-w-2xl" ref={searchContainerRef}>
+        <div className="relative flex items-center gap-1.5">
+          <div className="relative flex-1 flex items-center">
+            <Search className="w-4 h-4 md:w-5 md:h-5 absolute left-3 text-slate-400 pointer-events-none" />
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={handleKeyDown}
+              onFocus={(e) => {
+                e.target.select();
+                setIsOpen(true);
+              }}
+              placeholder="Scan or Search (e.g. 101 or 5*101) or Browse..."
+              className="w-full bg-slate-950 border-2 border-slate-700 focus:border-cyan-500 text-slate-100 text-xs md:text-sm font-semibold rounded-xl pl-9 md:pl-10 pr-24 py-2 outline-none transition-all placeholder:text-slate-500 shadow-inner"
+            />
+            {parsedQty > 1 && (
+              <span className="absolute right-10 px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 font-mono text-[10px] md:text-[11px] font-bold border border-amber-500/30 pointer-events-none">
+                Qty: {parsedQty}x
               </span>
+            )}
+            {query.length > 0 && (
               <button
                 type="button"
                 onClick={() => {
-                  setIsOpen(false);
                   setQuery('');
+                  setItemQuantities({});
+                  searchInputRef.current?.focus();
                 }}
-                className="px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 font-bold border border-rose-500/30 transition flex items-center gap-1 text-[11px]"
+                className="absolute right-2.5 p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
+                title="Clear search"
               >
-                <span>Done / Close (Esc)</span>
+                <X className="w-4 h-4" />
               </button>
-            </div>
-            {results.map((item, idx) => {
-              const displayPrice = (priceTier === 'wholesale' && item.wholesalePrice && item.wholesalePrice > 0) ? item.wholesalePrice : item.mrp;
-              const isJustAdded = lastAddedId === item.id;
-              return (
-                <div
-                  key={item.id}
-                  ref={(el) => { itemRefs.current[idx] = el; }}
-                  onClick={() => {
-                    handleSelect(item, true);
-                    setLastAddedId(item.id);
-                    setTimeout(() => setLastAddedId(null), 1200);
-                  }}
-                  className={`px-4 py-3 cursor-pointer flex items-center justify-between gap-4 transition-all ${
-                    idx === selectedIndex ? 'bg-cyan-950/90 border-l-4 border-cyan-400 text-white' : 'hover:bg-slate-800/70 text-slate-200'
+            )}
+          </div>
+
+          {/* Quick Toggle Browse / Multi-Select Button */}
+          <button
+            type="button"
+            onClick={() => {
+              setIsOpen(prev => !prev);
+              if (!isOpen && searchInputRef.current) {
+                searchInputRef.current.focus();
+              }
+            }}
+            className={`px-2.5 md:px-3 py-2 rounded-xl text-xs font-bold border transition flex items-center gap-1.5 shrink-0 ${
+              isOpen
+                ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50'
+                : 'bg-slate-950 hover:bg-slate-800 text-slate-300 border-slate-700'
+            }`}
+            title="Browse Categories & Multi-Select Items"
+          >
+            <Layers className="w-4 h-4 text-cyan-400" />
+            <span className="hidden sm:inline">Browse</span>
+            {selectedItemIds.size > 0 && (
+              <span className="px-1.5 py-0.2 rounded-full bg-emerald-500 text-slate-950 text-[10px] font-black">
+                {selectedItemIds.size}
+              </span>
+            )}
+          </button>
+        </div>
+
+        {/* Wide View Auto-complete Dropdown Panel with Multi-Select */}
+        {isOpen && (
+          <div className="absolute left-0 right-0 md:w-[780px] lg:w-[920px] md:-left-36 lg:-left-56 top-full mt-1.5 bg-slate-900 border-2 border-cyan-500/50 rounded-2xl shadow-2xl overflow-hidden z-50 flex flex-col max-h-[75vh] backdrop-blur-md">
+            {/* Header: Category Filter Pills */}
+            <div className="bg-slate-950/90 px-3 py-2 border-b border-slate-800 flex items-center gap-1.5 overflow-x-auto scrollbar-none shrink-0">
+              <span className="text-[11px] font-bold text-slate-400 flex items-center gap-1 shrink-0 mr-1">
+                <Filter className="w-3 h-3 text-cyan-400" />
+                <span>Category:</span>
+              </span>
+              {categories.map(cat => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold whitespace-nowrap transition shrink-0 ${
+                    selectedCategory === cat
+                      ? 'bg-cyan-500 text-slate-950 shadow'
+                      : 'bg-slate-850 hover:bg-slate-800 text-slate-300 border border-slate-750'
                   }`}
                 >
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <span className="font-mono text-xs font-black px-2.5 py-1 bg-slate-950 rounded-lg text-amber-400 border border-slate-700 shrink-0">
-                      {item.itemCode}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-extrabold text-xs md:text-sm text-slate-100 whitespace-normal break-words leading-snug">
-                        {item.itemName}
-                      </div>
-                      <div className="text-xs text-slate-400 mt-1 flex items-center gap-3 flex-wrap">
-                        <span className="bg-slate-800 px-2 py-0.5 rounded-md text-amber-300 font-bold border border-slate-700 text-[11px]">{item.category}</span>
-                        <span className="text-[11px]">Stock: <strong className={item.stockQty < 10 ? 'text-red-400 text-xs' : 'text-emerald-400 font-bold'}>{item.stockQty}</strong></span>
-                        {item.defaultGstRate > 0 && item.isGstApplicable && (
-                          <span className="text-slate-500 font-mono text-[11px]">GST {item.defaultGstRate}%</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 shrink-0">
-                    <div className="text-right">
-                      <div className="text-xs md:text-base font-black text-amber-400">
-                        ₹{displayPrice}
-                      </div>
-                      {item.wholesalePrice && item.wholesalePrice > 0 && priceTier === 'retail' && (
-                        <div className="text-[10px] text-slate-400 font-mono font-bold">WS: ₹{item.wholesalePrice}</div>
-                      )}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSelect(item, true);
-                        setLastAddedId(item.id);
-                        setTimeout(() => setLastAddedId(null), 1200);
+                  {cat}
+                </button>
+              ))}
+            </div>
+
+            {/* Sub-header Controls Bar */}
+            <div className="bg-slate-950 px-3 py-2 border-b border-slate-800 flex items-center justify-between text-xs font-bold text-slate-300 shrink-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={selectAllVisible}
+                  className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 transition flex items-center gap-1 text-[11px]"
+                  title="Select all currently visible matching items"
+                >
+                  <CheckSquare className="w-3.5 h-3.5" />
+                  <span>Select All ({results.length})</span>
+                </button>
+                {selectedItemIds.size > 0 && (
+                  <button
+                    type="button"
+                    onClick={deselectAll}
+                    className="px-2 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-400 border border-slate-700 transition text-[11px]"
+                  >
+                    Deselect All
+                  </button>
+                )}
+                <span className="text-slate-400 text-[11px] hidden sm:inline">
+                  • Tick checkboxes to multi-select items and add all together
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                {selectedItemIds.size > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleAddSelectedItems}
+                    className="px-3 py-1 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-lg shadow-md flex items-center gap-1 text-xs transition active:scale-95"
+                  >
+                    <ShoppingCart className="w-3.5 h-3.5" />
+                    <span>Add Selected ({selectedItemIds.size})</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsOpen(false);
+                    setQuery('');
+                    setItemQuantities({});
+                    setSelectedItemIds(new Set());
+                    searchInputRef.current?.focus();
+                  }}
+                  className="px-2 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 font-bold border border-rose-500/30 transition flex items-center gap-1 text-[11px]"
+                >
+                  <X className="w-3.5 h-3.5" />
+                  <span>Close</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Scrollable Results List */}
+            <div className="flex-1 overflow-y-auto divide-y divide-slate-800/80 min-h-0">
+              {results.length === 0 ? (
+                <div className="p-8 text-center text-slate-500">
+                  <p className="font-bold text-slate-400 text-sm">No items found matching "{searchTerm}"</p>
+                  <p className="text-xs mt-1">Try switching category or clearing the search box.</p>
+                </div>
+              ) : (
+                results.map((item, idx) => {
+                  const displayPrice = (priceTier === 'wholesale' && item.wholesalePrice && item.wholesalePrice > 0) ? item.wholesalePrice : item.mrp;
+                  const currentQty = getItemQty(item.id);
+                  const isJustAdded = lastAddedInfo?.id === item.id;
+                  const isSelected = selectedItemIds.has(item.id);
+
+                  return (
+                    <div
+                      key={item.id}
+                      ref={(el) => { itemRefs.current[idx] = el; }}
+                      onClick={() => {
+                        // If user is actively multi-selecting, clicking row toggles checkbox;
+                        // Otherwise, clicking row adds single item and clears.
+                        if (selectedItemIds.size > 0) {
+                          toggleSelectItem(item.id);
+                        } else {
+                          handleSelect(item, currentQty, true);
+                        }
                       }}
-                      className={`px-3 py-1.5 rounded-xl font-black text-xs uppercase tracking-wide shadow-md transition shrink-0 ${
-                        isJustAdded
-                          ? 'bg-emerald-500 text-slate-950 animate-bounce'
-                          : 'bg-cyan-500 hover:bg-cyan-400 text-slate-950'
+                      className={`px-3 md:px-4 py-2.5 cursor-pointer flex items-center justify-between gap-3 transition-all ${
+                        isSelected
+                          ? 'bg-cyan-950/80 border-l-4 border-cyan-400 text-white'
+                          : idx === selectedIndex
+                            ? 'bg-slate-800/90 text-white'
+                            : 'hover:bg-slate-800/60 text-slate-200'
                       }`}
                     >
-                      {isJustAdded ? '✓ Added!' : '+ Add'}
-                    </button>
+                      {/* Left: Selection Checkbox & Item Info */}
+                      <div className="flex items-center gap-2.5 md:gap-3 flex-1 min-w-0">
+                        {/* Checkbox */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleSelectItem(item.id);
+                          }}
+                          className="p-1 text-slate-400 hover:text-cyan-400 transition shrink-0"
+                          title={isSelected ? 'Deselect item' : 'Select item for multi-add'}
+                        >
+                          {isSelected ? (
+                            <CheckSquare className="w-5 h-5 text-cyan-400 fill-cyan-400/20" />
+                          ) : (
+                            <Square className="w-5 h-5 text-slate-500 hover:text-slate-300" />
+                          )}
+                        </button>
+
+                        <span className="font-mono text-xs font-black px-2 py-1 bg-slate-950 rounded-lg text-amber-400 border border-slate-700 shrink-0">
+                          {item.itemCode}
+                        </span>
+
+                        <div className="flex-1 min-w-0">
+                          <div className="font-extrabold text-xs md:text-sm text-slate-100 whitespace-normal break-words leading-snug">
+                            {item.itemName}
+                          </div>
+                          <div className="text-xs text-slate-400 mt-0.5 flex items-center gap-2.5 flex-wrap">
+                            <span className="bg-slate-800 px-1.5 py-0.5 rounded text-amber-300 font-bold border border-slate-700 text-[10px] md:text-[11px]">{item.category}</span>
+                            <span className="text-[10px] md:text-[11px]">Stock: <strong className={item.stockQty < 10 ? 'text-red-400 text-xs' : 'text-emerald-400 font-bold'}>{item.stockQty}</strong></span>
+                            {item.defaultGstRate > 0 && item.isGstApplicable && (
+                              <span className="text-slate-500 font-mono text-[10px] md:text-[11px]">GST {item.defaultGstRate}%</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Right: Price, Quantity Stepper, & Add Button */}
+                      <div className="flex items-center gap-2 md:gap-3 shrink-0" onClick={(e) => e.stopPropagation()}>
+                        <div className="text-right">
+                          <div className="text-xs md:text-sm font-black text-amber-400">
+                            ₹{displayPrice}
+                          </div>
+                          {item.wholesalePrice && item.wholesalePrice > 0 && priceTier === 'retail' && (
+                            <div className="text-[10px] text-slate-400 font-mono font-bold">WS: ₹{item.wholesalePrice}</div>
+                          )}
+                        </div>
+
+                        {/* Quantity Stepper & Input */}
+                        <div className="flex items-center bg-slate-950 border border-slate-700 rounded-xl p-0.5 shadow-inner">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setItemQty(item.id, currentQty - 1);
+                            }}
+                            className="w-6 h-6 md:w-7 md:h-7 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 active:scale-95 transition"
+                            title="Decrease Quantity"
+                          >
+                            <Minus className="w-3 h-3 md:w-3.5 md:h-3.5" />
+                          </button>
+                          <input
+                            type="number"
+                            min="1"
+                            max={item.stockQty > 0 ? item.stockQty : 9999}
+                            value={currentQty}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              setItemQty(item.id, parseInt(e.target.value, 10) || 1);
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleSelect(item, currentQty, true);
+                              }
+                            }}
+                            className="w-9 md:w-11 text-center bg-transparent text-xs font-black font-mono text-cyan-300 outline-none p-0"
+                          />
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setItemQty(item.id, currentQty + 1);
+                            }}
+                            className="w-6 h-6 md:w-7 md:h-7 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 active:scale-95 transition"
+                            title="Increase Quantity"
+                          >
+                            <Plus className="w-3 h-3 md:w-3.5 md:h-3.5" />
+                          </button>
+                        </div>
+
+                        {/* Add Single Button */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSelect(item, currentQty, true);
+                          }}
+                          className={`px-2.5 md:px-3 py-1.5 rounded-xl font-black text-xs uppercase tracking-wide shadow-md transition flex items-center gap-1 shrink-0 ${
+                            isJustAdded
+                              ? 'bg-emerald-500 text-slate-950 animate-bounce'
+                              : 'bg-cyan-500 hover:bg-cyan-400 text-slate-950 active:scale-95'
+                          }`}
+                        >
+                          {isJustAdded ? `✓ Added ${lastAddedInfo?.qty}x!` : `+ Add (${currentQty})`}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Sticky Bottom Action Bar for Multi-Item Adding */}
+            {selectedItemIds.size > 0 && (
+              <div className="bg-slate-950 px-4 py-3 border-t-2 border-emerald-500/50 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shadow-2xl shrink-0">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shrink-0">
+                    <ShoppingCart className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-extrabold text-white flex items-center gap-1.5">
+                      <span className="text-emerald-400">{selectedItemIds.size} Items Selected</span>
+                      <span className="text-slate-400">• Total Qty: <strong className="text-cyan-300 font-mono">{selectedTotalQty} pcs</strong></span>
+                    </div>
+                    <div className="text-[11px] text-slate-400">
+                      Estimated Subtotal: <strong className="text-amber-400 font-mono font-bold">₹{selectedTotalPrice.toFixed(2)}</strong>
+                    </div>
                   </div>
                 </div>
-              );
-            })}
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={deselectAll}
+                    className="px-3 py-2 text-xs font-bold text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition"
+                  >
+                    Clear All
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleAddSelectedItems}
+                    className="flex-1 sm:flex-initial bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-black text-xs px-5 py-2.5 rounded-xl shadow-xl flex items-center justify-center gap-2 active:scale-95 transition"
+                  >
+                    <Check className="w-4 h-4 stroke-[3]" />
+                    <span>Add All {selectedItemIds.size} Selected Items to Bill</span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
