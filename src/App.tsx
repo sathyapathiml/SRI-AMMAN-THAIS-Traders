@@ -26,7 +26,8 @@ import {
   getStoredPrinterConfig, 
   savePrinterConfigToDB, 
   resetInventoryToDefault,
-  resetStoredInvoices
+  resetStoredInvoices,
+  sortInventoryCategoryWise
 } from './services/db';
 import { calculateCartTotals, createCartItemFromItem, calculateLineItem } from './utils/calculations';
 import { printInvoiceViaSerial } from './services/serialPrinter';
@@ -64,6 +65,7 @@ import { PettyExpensesModal } from './components/PettyExpensesModal';
 import { DayClosingModal } from './components/DayClosingModal';
 import { LoginModal } from './components/LoginModal';
 import { PrintableReceipt } from './components/PrintableReceipt';
+import { QuickAddItemModal } from './components/QuickAddItemModal';
 
 // Default pre-seeded admin profile for sathyapathi555@gmail.com
 const DEFAULT_ADMIN: User = {
@@ -136,6 +138,9 @@ export function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isPettyExpensesOpen, setIsPettyExpensesOpen] = useState(false);
   const [isDayClosingOpen, setIsDayClosingOpen] = useState(false);
+  const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
+  const [quickAddInitialName, setQuickAddInitialName] = useState('');
+  const [quickAddInitialQty, setQuickAddInitialQty] = useState(1);
 
   // Active printed invoice state
   const [createdInvoice, setCreatedInvoice] = useState<Invoice | null>(null);
@@ -263,6 +268,13 @@ export function App() {
         handleNewBill();
       }
 
+      if (e.key === 'F3') {
+        e.preventDefault();
+        setQuickAddInitialName('');
+        setQuickAddInitialQty(1);
+        setIsQuickAddOpen(true);
+      }
+
       if (e.key === 'F10' || (e.ctrlKey && e.key === 'Enter')) {
         e.preventDefault();
         if (cartItems.length > 0) {
@@ -280,6 +292,7 @@ export function App() {
 
       if (e.key === 'Escape') {
         if (isLoginModalOpen) setIsLoginModalOpen(false);
+        else if (isQuickAddOpen) setIsQuickAddOpen(false);
         else if (isReceiptModalOpen) setIsReceiptModalOpen(false);
         else if (isCheckoutOpen) setIsCheckoutOpen(false);
         else if (isBulkDiscountOpen) setIsBulkDiscountOpen(false);
@@ -294,7 +307,7 @@ export function App() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [cartItems, isLoginModalOpen, isCheckoutOpen, isBulkDiscountOpen, isHeldBillsOpen, isInventoryOpen, isHistoryOpen, isSettingsOpen, isReceiptModalOpen, isPettyExpensesOpen, isDayClosingOpen]);
+  }, [cartItems, isLoginModalOpen, isQuickAddOpen, isCheckoutOpen, isBulkDiscountOpen, isHeldBillsOpen, isInventoryOpen, isHistoryOpen, isSettingsOpen, isReceiptModalOpen, isPettyExpensesOpen, isDayClosingOpen]);
 
   // Price Tier Switch Handler
   const handleTogglePriceTier = (newTier: PriceTier) => {
@@ -395,6 +408,97 @@ export function App() {
       message: `Added ${itemsWithQty.length} items (${totalQty} total pcs) to bill!`,
       type: 'success'
     });
+  };
+
+  // Add new item not in DB while billing: adds to current bill & updates price list
+  const handleAddNewCustomItem = async (data: {
+    itemName: string;
+    price: number;
+    qty: number;
+    category?: string;
+  }) => {
+    const cleanName = data.itemName.trim();
+    const cleanPrice = Number(data.price);
+    const cleanQty = Math.max(1, data.qty || 1);
+    const cleanCat = (data.category || 'General').trim();
+
+    if (!cleanName || isNaN(cleanPrice) || cleanPrice <= 0) return;
+
+    // 1. Calculate next sequential numeric ID and CRK code
+    const numericIds = inventory
+      .map(i => parseInt(i.id, 10))
+      .filter(n => !isNaN(n));
+    const maxId = numericIds.length > 0 ? Math.max(...numericIds) : 183;
+    const nextId = String(maxId + 1);
+
+    const crkNumbers = inventory
+      .map(i => {
+        const match = (i.itemCode || '').match(/CRK(\d+)/i);
+        return match ? parseInt(match[1], 10) : 0;
+      })
+      .filter(n => n > 0);
+    const maxCrk = crkNumbers.length > 0 ? Math.max(...crkNumbers) : maxId;
+    const nextCode = `CRK${String(maxCrk + 1).padStart(3, '0')}`;
+
+    const newItem: Item = {
+      id: nextId,
+      itemCode: nextCode,
+      itemName: cleanName,
+      category: cleanCat,
+      mrp: cleanPrice,
+      wholesalePrice: cleanPrice,
+      defaultDiscountValue: 0,
+      defaultDiscountType: 'percent',
+      defaultGstRate: 0,
+      isGstApplicable: false,
+      stockQty: 100
+    };
+
+    // 2. Add to active bill immediately
+    const cartLine = createCartItemFromItem(newItem, cleanQty, priceTier);
+    setCartItems(prev => [...prev, cartLine]);
+
+    // 3. Update local state & localStorage
+    const updatedInventory = sortInventoryCategoryWise([...inventory, newItem]);
+    setInventory(updatedInventory);
+    saveInventory(updatedInventory);
+
+    // 4. Save to backend API, priceListData.cjs & billing.db
+    try {
+      await saveLanInventoryItem(newItem);
+    } catch (e) {
+      console.warn('LAN server offline, saved locally to inventory', e);
+    }
+
+    setToast({
+      message: `Added "${newItem.itemName}" (₹${cleanPrice}) to bill & updated price list!`,
+      type: 'success'
+    });
+  };
+
+  // Update item price directly in bill
+  const handleUpdateItemPrice = (itemId: string, newPrice: number) => {
+    if (newPrice < 0) return;
+
+    setCartItems(prev =>
+      prev.map(item => {
+        if (item.id === itemId) {
+          return calculateLineItem(
+            item.itemCode,
+            item.itemName,
+            newPrice,
+            item.qty,
+            item.stockQty,
+            item.discountValue,
+            item.discountType,
+            item.gstRate,
+            item.isGstApplicable,
+            item.id
+          );
+        }
+        return item;
+      })
+    );
   };
 
   const handleUpdateQty = (id: string, qty: number) => {
@@ -781,6 +885,12 @@ export function App() {
         currentUser={currentUser}
         onOpenLoginModal={() => setIsLoginModalOpen(true)}
         onLogout={handleLogout}
+        onQuickAddNewItem={handleAddNewCustomItem}
+        onOpenQuickAddModal={(name, qty) => {
+          setQuickAddInitialName(name || '');
+          setQuickAddInitialQty(qty || 1);
+          setIsQuickAddOpen(true);
+        }}
       />
 
       {/* Main Split POS View */}
@@ -792,6 +902,12 @@ export function App() {
           onUpdateGst={handleUpdateGst}
           onRemoveItem={handleRemoveItem}
           onOpenBulkDiscount={() => setIsBulkDiscountOpen(true)}
+          onOpenQuickAddModal={() => {
+            setQuickAddInitialName('');
+            setQuickAddInitialQty(1);
+            setIsQuickAddOpen(true);
+          }}
+          onUpdatePrice={handleUpdateItemPrice}
         />
 
         <CheckoutPanel
@@ -878,6 +994,15 @@ export function App() {
         isOpen={isBulkDiscountOpen}
         onClose={() => setIsBulkDiscountOpen(false)}
         onApplyBulkDiscount={handleApplyBulkDiscount}
+      />
+
+      <QuickAddItemModal
+        isOpen={isQuickAddOpen}
+        onClose={() => setIsQuickAddOpen(false)}
+        onAddAndSave={handleAddNewCustomItem}
+        existingCategories={Array.from(new Set(inventory.map(i => i.category || 'General')))}
+        initialName={quickAddInitialName}
+        initialQty={quickAddInitialQty}
       />
 
       <HeldBillsModal

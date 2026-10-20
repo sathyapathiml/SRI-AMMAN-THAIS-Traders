@@ -41,9 +41,9 @@ const items = [
   { id: '32', itemCode: 'CRK032', itemName: 'Silver Pencil Sparklers (10 Pcs)', category: 'Sparkler Pencils', mrp: 75, wholesalePrice: 75 },
   { id: '33', itemCode: 'CRK033', itemName: 'Navrang Color Pencil Sparklers (3 Pcs)', category: 'Sparkler Pencils', mrp: 150, wholesalePrice: 150 },
 
-  // Page 2: சாட்டை -> Cracker Whips
-  { id: '34', itemCode: 'CRK034', itemName: 'Cracker Whip Small 1.5 ft (10 Pcs)', category: 'Cracker Whips', mrp: 30, wholesalePrice: 30 },
-  { id: '35', itemCode: 'CRK035', itemName: 'Cracker Whip Big 4 ft (10 Pcs)', category: 'Cracker Whips', mrp: 65, wholesalePrice: 65 },
+  // Page 2: சாட்டை -> Cracker Saattai
+  { id: '34', itemCode: 'CRK034', itemName: 'Cracker Saattai Small 1.5 ft (10 Pcs)', category: 'Cracker Saattai', mrp: 30, wholesalePrice: 30 },
+  { id: '35', itemCode: 'CRK035', itemName: 'Cracker Saattai Big 4 ft (10 Pcs)', category: 'Cracker Saattai', mrp: 65, wholesalePrice: 65 },
 
   // Page 3: பவுண்டன் ஃபேண்சி புஸ்வானம் -> Fancy Fountains
   { id: '36', itemCode: 'CRK036', itemName: 'Disco Shower Fountain (5 Pcs)', category: 'Fancy Fountains', mrp: 100, wholesalePrice: 100 },
@@ -244,7 +244,7 @@ const items = [
   { id: '175', itemCode: 'CRK175', itemName: '5000 Flash Mega Sound (1 Box)', category: 'Mega Flash Crackers', mrp: 1000, wholesalePrice: 1000 },
   { id: '176', itemCode: 'CRK176', itemName: '10000 Flash Mega Sound (1 Box)', category: 'Mega Flash Crackers', mrp: 2000, wholesalePrice: 2000 },
   { id: '177', itemCode: 'CRK177', itemName: 'Color Smoke Cylinder Bomb (1 Box)', category: 'Mega Flash Crackers', mrp: 165, wholesalePrice: 165 },
-  { id: '178', itemCode: 'CRK178', itemName: 'Gold Shower Cylinder Bomb (1 Box)', category: 'Mega Flash Crackers', mrp: 165, wholesalePrice: 165 }
+  { id: '178', itemCode: 'CRK178', itemName: 'Gold Shower Cylinder Bomb (1 Box)', category: 'Mega Flash Crackers', mrp: 165, wholesalePrice: 165 },
 ];
 
 module.exports = { items };

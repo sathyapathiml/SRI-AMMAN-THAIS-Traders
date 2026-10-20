@@ -9,6 +9,8 @@ interface BillingTableProps {
   onUpdateGst: (id: string, isGstApplicable: boolean, gstRate: number) => void;
   onRemoveItem: (id: string) => void;
   onOpenBulkDiscount: () => void;
+  onOpenQuickAddModal?: () => void;
+  onUpdatePrice?: (id: string, newPrice: number) => void;
 }
 
 export const BillingTable: React.FC<BillingTableProps> = ({
@@ -17,8 +19,12 @@ export const BillingTable: React.FC<BillingTableProps> = ({
   onUpdateDiscount,
   onUpdateGst,
   onRemoveItem,
-  onOpenBulkDiscount
+  onOpenBulkDiscount,
+  onOpenQuickAddModal,
+  onUpdatePrice
 }) => {
+  const [editingPriceId, setEditingPriceId] = React.useState<string | null>(null);
+  const [tempPrice, setTempPrice] = React.useState<string>('');
   return (
     <div className="flex-1 flex flex-col bg-slate-900 rounded-xl border border-slate-800 shadow-lg overflow-hidden min-h-[300px] md:min-h-[400px]">
       {/* Table Top Controls Header */}
@@ -32,15 +38,29 @@ export const BillingTable: React.FC<BillingTableProps> = ({
           </h2>
         </div>
 
-        {cartItems.length > 0 && (
-          <button
-            onClick={onOpenBulkDiscount}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 font-bold text-xs transition shadow-sm"
-          >
-            <Tag className="w-3.5 h-3.5" />
-            <span>Apply Flat Discount To All</span>
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {onOpenQuickAddModal && (
+            <button
+              type="button"
+              onClick={onOpenQuickAddModal}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 font-bold text-xs transition shadow-sm active:scale-95"
+              title="Add new item not in database to bill & price list (F3)"
+            >
+              <Plus className="w-3.5 h-3.5 stroke-[3]" />
+              <span>+ Add Custom Item</span>
+            </button>
+          )}
+
+          {cartItems.length > 0 && (
+            <button
+              onClick={onOpenBulkDiscount}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 font-bold text-xs transition shadow-sm"
+            >
+              <Tag className="w-3.5 h-3.5" />
+              <span>Apply Flat Discount To All</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Main Line Items Table */}
@@ -51,9 +71,19 @@ export const BillingTable: React.FC<BillingTableProps> = ({
               <Sparkles className="w-8 h-8" />
             </div>
             <p className="text-base font-bold text-slate-300">Cart is Empty</p>
-            <p className="text-xs text-slate-500 mt-1 max-w-sm">
-              Scan item barcode or search item name using <kbd className="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-cyan-400 font-mono text-xs">Ctrl + F</kbd> or <kbd className="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-cyan-400 font-mono text-xs">/</kbd> to add items.
+            <p className="text-xs text-slate-500 mt-1 max-w-sm mb-4">
+              Scan item barcode, search using <kbd className="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-cyan-400 font-mono text-xs">/</kbd>, or add an off-catalog item.
             </p>
+            {onOpenQuickAddModal && (
+              <button
+                type="button"
+                onClick={onOpenQuickAddModal}
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-500 hover:to-emerald-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-cyan-950/50 active:scale-95 transition"
+              >
+                <Plus className="w-4 h-4 stroke-[3]" />
+                <span>+ Add New Item to Bill</span>
+              </button>
+            )}
           </div>
         ) : (
           <table className="w-full text-left border-collapse min-w-[760px]">
@@ -101,9 +131,59 @@ export const BillingTable: React.FC<BillingTableProps> = ({
                     </span>
                   </td>
 
-                  {/* Price */}
-                  <td className="py-2 px-3 text-right font-mono font-bold text-amber-300">
-                    ₹{item.mrp.toFixed(2)}
+                  {/* Price (Clickable to edit directly in bill) */}
+                  <td className="py-2 px-3 text-right">
+                    {editingPriceId === item.id ? (
+                      <div className="flex items-center justify-end gap-1">
+                        <span className="text-amber-400 font-bold text-xs">₹</span>
+                        <input
+                          type="number"
+                          step="any"
+                          min="0"
+                          value={tempPrice}
+                          onChange={(e) => setTempPrice(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              const p = parseFloat(tempPrice);
+                              if (!isNaN(p) && p >= 0 && onUpdatePrice) {
+                                onUpdatePrice(item.id, p);
+                              }
+                              setEditingPriceId(null);
+                            } else if (e.key === 'Escape') {
+                              setEditingPriceId(null);
+                            }
+                          }}
+                          autoFocus
+                          className="w-16 bg-slate-950 border border-cyan-400 rounded px-1 py-0.5 text-right font-mono font-bold text-xs text-amber-300 outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const p = parseFloat(tempPrice);
+                            if (!isNaN(p) && p >= 0 && onUpdatePrice) {
+                              onUpdatePrice(item.id, p);
+                            }
+                            setEditingPriceId(null);
+                          }}
+                          className="p-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white"
+                          title="Save price for this bill"
+                        >
+                          <Check className="w-3 h-3 stroke-[3]" />
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingPriceId(item.id);
+                          setTempPrice(String(item.mrp));
+                        }}
+                        className="font-mono font-bold text-amber-300 hover:text-amber-200 hover:underline cursor-pointer group-hover:bg-slate-800/80 px-1.5 py-0.5 rounded transition text-right"
+                        title="Click to edit price for this bill"
+                      >
+                        ₹{item.mrp.toFixed(2)}
+                      </button>
+                    )}
                   </td>
 
                   {/* Editable Quantity */}

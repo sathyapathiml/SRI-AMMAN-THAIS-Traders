@@ -433,8 +433,8 @@ export const initialInventory: Item[] = [
   {
     id: '34',
     itemCode: 'CRK034',
-    itemName: "Cracker Whip Small 1.5 ft (10 Pcs)",
-    category: "Cracker Whips",
+    itemName: "Cracker Saattai Small 1.5 ft (10 Pcs)",
+    category: "Cracker Saattai",
     mrp: 30,
     wholesalePrice: 30,
     defaultDiscountValue: 0,
@@ -446,8 +446,8 @@ export const initialInventory: Item[] = [
   {
     id: '35',
     itemCode: 'CRK035',
-    itemName: "Cracker Whip Big 4 ft (10 Pcs)",
-    category: "Cracker Whips",
+    itemName: "Cracker Saattai Big 4 ft (10 Pcs)",
+    category: "Cracker Saattai",
     mrp: 65,
     wholesalePrice: 65,
     defaultDiscountValue: 0,

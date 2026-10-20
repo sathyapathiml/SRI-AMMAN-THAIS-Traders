@@ -55,6 +55,8 @@ interface HeaderBarProps {
   currentUser: User | null;
   onOpenLoginModal: () => void;
   onLogout: () => void;
+  onQuickAddNewItem?: (itemData: { itemName: string; price: number; qty: number; category: string }) => void;
+  onOpenQuickAddModal?: (initialName?: string, initialQty?: number) => void;
 }
 
 // Parse smart search syntax with quantity like "5*101" or "101*5" or "5 x 101"
@@ -106,7 +108,9 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
   onTogglePriceTier,
   currentUser,
   onOpenLoginModal,
-  onLogout
+  onLogout,
+  onQuickAddNewItem,
+  onOpenQuickAddModal
 }) => {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Item[]>([]);
@@ -116,7 +120,12 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
   const [itemQuantities, setItemQuantities] = useState<Record<string, number>>({});
   const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(new Set());
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [customName, setCustomName] = useState('');
+  const [customPrice, setCustomPrice] = useState('');
+  const [customQty, setCustomQty] = useState(1);
+  const [customCategory, setCustomCategory] = useState('General');
   const itemRefs = React.useRef<(HTMLDivElement | null)[]>([]);
+  const customPriceInputRef = React.useRef<HTMLInputElement | null>(null);
 
   // Unique list of categories in inventory for category-wise quick selection
   const categories = React.useMemo(() => {
@@ -278,6 +287,31 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
     }
   };
 
+  const handleInlineQuickAdd = () => {
+    const nameToAdd = (customName || searchTerm).trim();
+    const priceToAdd = parseFloat(customPrice);
+    if (!nameToAdd) return;
+    if (isNaN(priceToAdd) || priceToAdd <= 0) {
+      customPriceInputRef.current?.focus();
+      return;
+    }
+
+    if (onQuickAddNewItem) {
+      onQuickAddNewItem({
+        itemName: nameToAdd,
+        price: priceToAdd,
+        qty: customQty || parsedQty || 1,
+        category: customCategory.trim() || (selectedCategory !== 'All' ? selectedCategory : 'General')
+      });
+      setQuery('');
+      setCustomName('');
+      setCustomPrice('');
+      setCustomQty(1);
+      setIsOpen(false);
+      if (searchInputRef.current) searchInputRef.current.focus();
+    }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
@@ -301,6 +335,13 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
           const qty = getItemQty(targetItem.id);
           // Keep showing searched items so user can continue or close!
           handleSelect(targetItem, qty, false);
+        }
+      } else if (searchTerm) {
+        // No items in database! If customPrice is already filled, add it; otherwise focus price input
+        if (customPrice && parseFloat(customPrice) > 0) {
+          handleInlineQuickAdd();
+        } else {
+          customPriceInputRef.current?.focus();
         }
       }
     } else if (e.key === 'Escape') {
@@ -438,6 +479,19 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
               </span>
             )}
           </button>
+
+          {/* Quick Add Custom Item Button */}
+          {onOpenQuickAddModal && (
+            <button
+              type="button"
+              onClick={() => onOpenQuickAddModal(searchTerm, parsedQty)}
+              className="px-2.5 md:px-3 py-2 rounded-xl text-xs font-bold border border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 transition flex items-center gap-1.5 shrink-0"
+              title="Add item not in database to bill & price list (F3)"
+            >
+              <Plus className="w-4 h-4 text-emerald-400 stroke-[3]" />
+              <span className="hidden sm:inline">+ Custom Item</span>
+            </button>
+          )}
         </div>
 
         {/* Wide View Auto-complete Dropdown Panel with Multi-Select */}
@@ -531,9 +585,92 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
             {/* Scrollable Results List */}
             <div className="flex-1 overflow-y-auto divide-y divide-slate-800/80 min-h-0">
               {results.length === 0 ? (
-                <div className="p-8 text-center text-slate-500">
-                  <p className="font-bold text-slate-400 text-sm">No items found matching "{searchTerm}"</p>
-                  <p className="text-xs mt-1">Try switching category or clearing the search box.</p>
+                <div className="p-4 sm:p-6 text-slate-300">
+                  <div className="max-w-lg mx-auto bg-slate-950/95 border-2 border-dashed border-cyan-500/50 rounded-2xl p-4 sm:p-5 shadow-2xl space-y-3.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center border border-cyan-500/40">
+                          <Plus className="w-4 h-4 stroke-[3]" />
+                        </div>
+                        <div>
+                          <h4 className="font-extrabold text-sm text-white">Item Not in Database?</h4>
+                          <p className="text-[11px] text-cyan-400 font-semibold">Add directly to bill & save to price list</p>
+                        </div>
+                      </div>
+                      <span className="px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold uppercase tracking-wider">
+                        Quick Add
+                      </span>
+                    </div>
+
+                    <div className="space-y-2.5">
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-400 mb-1">Item Name</label>
+                        <input
+                          type="text"
+                          value={customName || searchTerm}
+                          onChange={(e) => setCustomName(e.target.value)}
+                          placeholder="e.g. 10cm Color Sparklers"
+                          className="w-full bg-slate-900 border border-slate-700 focus:border-cyan-400 rounded-xl px-3 py-2 text-xs font-bold text-white outline-none"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2.5">
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-400 mb-1">Selling Price (₹)</label>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-amber-400 font-bold text-xs">₹</span>
+                            <input
+                              ref={customPriceInputRef}
+                              type="number"
+                              step="any"
+                              min="0.01"
+                              value={customPrice}
+                              onChange={(e) => setCustomPrice(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  handleInlineQuickAdd();
+                                }
+                              }}
+                              placeholder="0.00"
+                              className="w-full bg-slate-900 border border-slate-700 focus:border-cyan-400 rounded-xl pl-7 pr-3 py-2 text-xs font-mono font-bold text-amber-300 outline-none"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-400 mb-1">Quantity</label>
+                          <input
+                            type="number"
+                            min="1"
+                            value={customQty}
+                            onChange={(e) => setCustomQty(parseInt(e.target.value, 10) || 1)}
+                            className="w-full bg-slate-900 border border-slate-700 focus:border-cyan-400 rounded-xl px-3 py-2 text-xs font-mono font-bold text-cyan-300 text-center outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-400 mb-1">Category</label>
+                        <input
+                          type="text"
+                          value={customCategory}
+                          onChange={(e) => setCustomCategory(e.target.value)}
+                          placeholder="Category (e.g. Sparklers, Sky Shots)"
+                          className="w-full bg-slate-900 border border-slate-700 focus:border-cyan-400 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-200 outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleInlineQuickAdd}
+                      className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-black text-xs shadow-xl flex items-center justify-center gap-2 active:scale-95 transition"
+                    >
+                      <Check className="w-4 h-4 stroke-[3]" />
+                      <span>Add to Bill & Save to Price List (Enter)</span>
+                    </button>
+                  </div>
                 </div>
               ) : (
                 results.map((item, idx) => {

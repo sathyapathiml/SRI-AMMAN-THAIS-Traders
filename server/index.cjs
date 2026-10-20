@@ -3,6 +3,7 @@ const cors = require('cors');
 const os = require('os');
 const path = require('path');
 const db = require('./db.cjs');
+const { syncItemToPriceList } = require('./priceListSync.cjs');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -73,6 +74,7 @@ app.get('/api/inventory', async (req, res) => {
 app.post('/api/inventory', async (req, res) => {
   try {
     await db.saveInventoryItem(req.body);
+    syncItemToPriceList(req.body);
     const items = await db.getInventory();
     res.json(items);
   } catch (err) {
