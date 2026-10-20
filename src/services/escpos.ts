@@ -48,9 +48,9 @@ const stringToBytes = (text: string): number[] => {
   const bytes: number[] = [];
   for (let i = 0; i < text.length; i++) {
     const code = text.charCodeAt(i);
-    // Replace non-ASCII currency symbol with Rs. for raw serial thermal printing compatibility
+    // Skip non-ASCII Rupee currency symbol for thermal printer compatibility
     if (code === 8377) { // '₹' symbol
-      bytes.push(...Array.from(new TextEncoder().encode('Rs.')));
+      continue;
     } else {
       bytes.push(code > 255 ? 0x3F : code);
     }
@@ -138,7 +138,7 @@ export const buildEscPosBuffer = (invoice: Invoice, settings: StoreSettings, aut
     const nameStr = padRight(item.itemName, 24);
     const qtyStr = padLeft(`${item.qty}`, 6);
     const rateStr = padLeft(`${item.mrp.toFixed(2)}`, 8);
-    const totalStr = padLeft(`Rs.${item.lineGrandTotal.toFixed(2)}`, 10);
+    const totalStr = padLeft(`${item.lineGrandTotal.toFixed(2)}`, 10);
     
     printText(`${nameStr}${qtyStr}${rateStr}${totalStr}\n`);
   });
@@ -155,17 +155,17 @@ export const buildEscPosBuffer = (invoice: Invoice, settings: StoreSettings, aut
 
   // 6. Financial Totals Summary - Only Discounted Subtotal & Net Payable
   push(ESC_POS_COMMANDS.ALIGN_RIGHT);
-  printText(formatLine('Subtotal:', `Rs. ${invoice.subtotalMRP.toFixed(2)}`) + '\n');
+  printText(formatLine('Subtotal:', `${invoice.subtotalMRP.toFixed(2)}`) + '\n');
 
   if (invoice.overallDiscountAmount && invoice.overallDiscountAmount > 0) {
-    printText(formatLine('Bill Extra Discount:', `- Rs. ${invoice.overallDiscountAmount.toFixed(2)}`) + '\n');
+    printText(formatLine('Bill Extra Discount:', `-${invoice.overallDiscountAmount.toFixed(2)}`) + '\n');
   }
 
   if (invoice.totalGST > 0) {
-    printText(formatLine('Taxable Subtotal:', `Rs. ${invoice.taxableAmount.toFixed(2)}`) + '\n');
-    printText(formatLine('CGST (Split 50%):', `Rs. ${invoice.totalCGST.toFixed(2)}`) + '\n');
-    printText(formatLine('SGST (Split 50%):', `Rs. ${invoice.totalSGST.toFixed(2)}`) + '\n');
-    printText(formatLine('Total GST Tax:', `Rs. ${invoice.totalGST.toFixed(2)}`) + '\n');
+    printText(formatLine('Taxable Subtotal:', `${invoice.taxableAmount.toFixed(2)}`) + '\n');
+    printText(formatLine('CGST (Split 50%):', `${invoice.totalCGST.toFixed(2)}`) + '\n');
+    printText(formatLine('SGST (Split 50%):', `${invoice.totalSGST.toFixed(2)}`) + '\n');
+    printText(formatLine('Total GST Tax:', `${invoice.totalGST.toFixed(2)}`) + '\n');
   }
 
   printText(dividerLine('='));
@@ -173,13 +173,13 @@ export const buildEscPosBuffer = (invoice: Invoice, settings: StoreSettings, aut
   // Grand Total Highlight
   push(ESC_POS_COMMANDS.BOLD_ON);
   push(ESC_POS_COMMANDS.DOUBLE_HEIGHT_ON);
-  printText(formatLine('NET PAYABLE:', `Rs. ${invoice.grandTotal.toFixed(2)}`) + '\n');
+  printText(formatLine('NET PAYABLE:', `${invoice.grandTotal.toFixed(2)}`) + '\n');
   push(ESC_POS_COMMANDS.NORMAL_SIZE);
   push(ESC_POS_COMMANDS.BOLD_OFF);
 
   if (invoice.paymentMode === 'Cash' && invoice.cashTendered) {
-    printText(formatLine('Cash Tendered:', `Rs. ${invoice.cashTendered.toFixed(2)}`) + '\n');
-    printText(formatLine('Change Returned:', `Rs. ${(invoice.changeReturned || 0).toFixed(2)}`) + '\n');
+    printText(formatLine('Cash Tendered:', `${invoice.cashTendered.toFixed(2)}`) + '\n');
+    printText(formatLine('Change Returned:', `${(invoice.changeReturned || 0).toFixed(2)}`) + '\n');
   }
 
   printText(dividerLine('-'));

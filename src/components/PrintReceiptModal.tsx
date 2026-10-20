@@ -100,8 +100,8 @@ export const PrintReceiptModal: React.FC<PrintReceiptModalProps> = ({
                       <tr key={item.id}>
                         <td className="py-1 font-semibold pr-1 break-words">{item.itemName}</td>
                         <td className="py-1 text-center font-mono">{item.qty}</td>
-                        <td className="py-1 text-right font-mono">₹{item.mrp.toFixed(2)}</td>
-                        <td className="py-1 text-right font-mono font-bold">₹{item.lineGrandTotal.toFixed(2)}</td>
+                        <td className="py-1 text-right font-mono">{item.mrp.toFixed(2)}</td>
+                        <td className="py-1 text-right font-mono font-bold">{item.lineGrandTotal.toFixed(2)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -122,38 +122,38 @@ export const PrintReceiptModal: React.FC<PrintReceiptModalProps> = ({
                 </div>
                 <div className="flex justify-between">
                   <span>Subtotal:</span>
-                  <span className="font-mono">₹{invoice.subtotalMRP.toFixed(2)}</span>
+                  <span className="font-mono">{invoice.subtotalMRP.toFixed(2)}</span>
                 </div>
                 {invoice.overallDiscountAmount && invoice.overallDiscountAmount > 0 && (
                   <div className="flex justify-between font-bold text-slate-800">
                     <span>Extra Discount:</span>
-                    <span className="font-mono">-₹{invoice.overallDiscountAmount.toFixed(2)}</span>
+                    <span className="font-mono">-{invoice.overallDiscountAmount.toFixed(2)}</span>
                   </div>
                 )}
                 {invoice.totalGST > 0 && (
                   <>
                     <div className="flex justify-between text-[10px] text-slate-600">
                       <span>Taxable Value:</span>
-                      <span className="font-mono">₹{invoice.taxableAmount.toFixed(2)}</span>
+                      <span className="font-mono">{invoice.taxableAmount.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between text-[10px] text-slate-600">
                       <span>CGST (Half):</span>
-                      <span className="font-mono">₹{invoice.totalCGST.toFixed(2)}</span>
+                      <span className="font-mono">{invoice.totalCGST.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between text-[10px] text-slate-600">
                       <span>SGST (Half):</span>
-                      <span className="font-mono">₹{invoice.totalSGST.toFixed(2)}</span>
+                      <span className="font-mono">{invoice.totalSGST.toFixed(2)}</span>
                     </div>
                   </>
                 )}
                 <div className="flex justify-between text-sm font-black pt-1 border-t border-slate-900">
                   <span>GRAND TOTAL:</span>
-                  <span className="font-mono">₹{invoice.grandTotal.toFixed(2)}</span>
+                  <span className="font-mono">{invoice.grandTotal.toFixed(2)}</span>
                 </div>
                 {invoice.paymentMode === 'Cash' && invoice.cashTendered && (
                   <div className="flex justify-between text-[10px] text-slate-700 pt-0.5">
-                    <span>Cash Tendered: ₹{invoice.cashTendered.toFixed(2)}</span>
-                    <span>Change: ₹{(invoice.changeReturned || 0).toFixed(2)}</span>
+                    <span>Cash Tendered: {invoice.cashTendered.toFixed(2)}</span>
+                    <span>Change: {(invoice.changeReturned || 0).toFixed(2)}</span>
                   </div>
                 )}
               </div>

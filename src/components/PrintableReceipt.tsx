@@ -69,8 +69,8 @@ export const PrintableReceipt: React.FC<PrintableReceiptProps> = ({ invoice, set
             <tr key={item.id} className="receipt-table-row">
               <td className="receipt-item-name">{item.itemName}</td>
               <td className="text-center">{item.qty}</td>
-              <td className="text-right">Rs.{item.mrp.toFixed(2)}</td>
-              <td className="text-right font-bold">Rs.{item.lineGrandTotal.toFixed(2)}</td>
+              <td className="text-right">{item.mrp.toFixed(2)}</td>
+              <td className="text-right font-bold">{item.lineGrandTotal.toFixed(2)}</td>
             </tr>
           ))}
         </tbody>
@@ -90,27 +90,27 @@ export const PrintableReceipt: React.FC<PrintableReceiptProps> = ({ invoice, set
       <div className="receipt-totals">
         <div className="receipt-row">
           <span>Subtotal:</span>
-          <span>Rs.{invoice.subtotalMRP.toFixed(2)}</span>
+          <span>{invoice.subtotalMRP.toFixed(2)}</span>
         </div>
         {invoice.overallDiscountAmount && invoice.overallDiscountAmount > 0 && (
           <div className="receipt-row font-bold">
             <span>Extra Discount:</span>
-            <span>-Rs.{invoice.overallDiscountAmount.toFixed(2)}</span>
+            <span>-{invoice.overallDiscountAmount.toFixed(2)}</span>
           </div>
         )}
         {invoice.totalGST > 0 && (
           <>
             <div className="receipt-row text-xs">
               <span>Taxable Value:</span>
-              <span>Rs.{invoice.taxableAmount.toFixed(2)}</span>
+              <span>{invoice.taxableAmount.toFixed(2)}</span>
             </div>
             <div className="receipt-row text-xs">
               <span>CGST (50%):</span>
-              <span>Rs.{invoice.totalCGST.toFixed(2)}</span>
+              <span>{invoice.totalCGST.toFixed(2)}</span>
             </div>
             <div className="receipt-row text-xs">
               <span>SGST (50%):</span>
-              <span>Rs.{invoice.totalSGST.toFixed(2)}</span>
+              <span>{invoice.totalSGST.toFixed(2)}</span>
             </div>
           </>
         )}
@@ -119,13 +119,13 @@ export const PrintableReceipt: React.FC<PrintableReceiptProps> = ({ invoice, set
 
         <div className="receipt-row receipt-grand-total">
           <span>GRAND TOTAL:</span>
-          <span>Rs.{invoice.grandTotal.toFixed(2)}</span>
+          <span>{invoice.grandTotal.toFixed(2)}</span>
         </div>
 
         {invoice.paymentMode === 'Cash' && invoice.cashTendered && (
           <div className="receipt-row text-xs">
-            <span>Cash Recd: Rs.{invoice.cashTendered.toFixed(2)}</span>
-            <span>Change: Rs.{(invoice.changeReturned || 0).toFixed(2)}</span>
+            <span>Cash Recd: {invoice.cashTendered.toFixed(2)}</span>
+            <span>Change: {(invoice.changeReturned || 0).toFixed(2)}</span>
           </div>
         )}
       </div>
