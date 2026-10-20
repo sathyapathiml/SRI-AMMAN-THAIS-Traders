@@ -45,7 +45,20 @@ export const getStoredInventory = (): Item[] => {
       localStorage.setItem(STORAGE_KEYS.INVENTORY, JSON.stringify(sorted));
       return sorted;
     }
-    return sortInventoryCategoryWise(JSON.parse(data));
+    const parsed: Item[] = JSON.parse(data);
+    // Ensure all items use discounted price directly without inflated MRP
+    const sanitized = parsed.map(item => {
+      const discountedPrice = (typeof item.wholesalePrice === 'number' && item.wholesalePrice > 0)
+        ? item.wholesalePrice
+        : item.mrp;
+      return {
+        ...item,
+        mrp: discountedPrice,
+        wholesalePrice: discountedPrice,
+        defaultDiscountValue: 0
+      };
+    });
+    return sortInventoryCategoryWise(sanitized);
   } catch (err) {
     console.error('Failed to load inventory from localStorage', err);
     return sortInventoryCategoryWise(initialInventory);

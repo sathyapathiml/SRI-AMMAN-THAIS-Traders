@@ -254,6 +254,7 @@ export const InvoiceHistoryModal: React.FC<InvoiceHistoryModalProps> = ({
                       <tr>
                         <th className="p-2">Item</th>
                         <th className="p-2 text-center">Qty</th>
+                        <th className="p-2 text-right">Price</th>
                         <th className="p-2 text-right">Total</th>
                       </tr>
                     </thead>
@@ -262,6 +263,7 @@ export const InvoiceHistoryModal: React.FC<InvoiceHistoryModalProps> = ({
                         <tr key={item.id}>
                           <td className="p-2 text-slate-200 font-sans">{item.itemName}</td>
                           <td className="p-2 text-center">{item.qty}</td>
+                          <td className="p-2 text-right text-slate-300">₹{item.mrp.toFixed(2)}</td>
                           <td className="p-2 text-right font-bold text-cyan-400">₹{item.lineGrandTotal.toFixed(2)}</td>
                         </tr>
                       ))}
@@ -270,14 +272,20 @@ export const InvoiceHistoryModal: React.FC<InvoiceHistoryModalProps> = ({
                 </div>
 
                 <div className="p-3 bg-slate-900 border border-slate-800 rounded-xl text-xs space-y-1 font-mono">
+                  <div className="flex justify-between text-cyan-400 font-bold">
+                    <span>Total Items:</span>
+                    <span>{selectedInvoice.items.length} items ({selectedInvoice.items.reduce((s, i) => s + i.qty, 0)} pcs)</span>
+                  </div>
                   <div className="flex justify-between text-slate-400">
-                    <span>Subtotal MRP:</span>
+                    <span>Subtotal:</span>
                     <span>₹{selectedInvoice.subtotalMRP.toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between text-amber-400">
-                    <span>Discount:</span>
-                    <span>-₹{selectedInvoice.totalDiscount.toFixed(2)}</span>
-                  </div>
+                  {selectedInvoice.overallDiscountAmount && selectedInvoice.overallDiscountAmount > 0 && (
+                    <div className="flex justify-between text-amber-400">
+                      <span>Extra Discount:</span>
+                      <span>-₹{selectedInvoice.overallDiscountAmount.toFixed(2)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-cyan-400">
                     <span>Total GST:</span>
                     <span>+₹{selectedInvoice.totalGST.toFixed(2)}</span>

@@ -755,6 +755,7 @@ export function App() {
       {/* Top Header Navbar */}
       <HeaderBar
         inventory={inventory}
+        cartItems={cartItems}
         onSelectItem={handleSelectItem}
         onSelectMultipleItems={handleSelectMultipleItems}
         onNewBill={handleNewBill}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import type { Item, PriceTier, User } from '../types/pos';
+import type { Item, PriceTier, User, CartLineItem } from '../types/pos';
 import { LOGO_DATA_URI } from '../data/logoDataUri';
 import { 
   Search, 
@@ -32,6 +32,7 @@ import {
 
 interface HeaderBarProps {
   inventory: Item[];
+  cartItems?: CartLineItem[];
   onSelectItem: (item: Item, qty?: number) => void;
   onSelectMultipleItems?: (itemsWithQty: { item: Item; qty: number }[]) => void;
   onNewBill: () => void;
@@ -86,6 +87,7 @@ const parseSearchInput = (input: string): { searchTerm: string; parsedQty: numbe
 
 export const HeaderBar: React.FC<HeaderBarProps> = ({
   inventory,
+  cartItems = [],
   onSelectItem,
   onSelectMultipleItems,
   onNewBill,
@@ -229,12 +231,12 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
 
   const selectedTotalPrice = React.useMemo(() => {
     return selectedItemsList.reduce((sum, { item, qty }) => {
-      const price = (priceTier === 'wholesale' && item.wholesalePrice && item.wholesalePrice > 0)
+      const price = (typeof item.wholesalePrice === 'number' && item.wholesalePrice > 0)
         ? item.wholesalePrice
         : item.mrp;
       return sum + (price * qty);
     }, 0);
-  }, [selectedItemsList, priceTier]);
+  }, [selectedItemsList]);
 
   const handleAddSelectedItems = () => {
     if (selectedItemsList.length === 0) return;
@@ -244,16 +246,15 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
       selectedItemsList.forEach(({ item, qty }) => onSelectItem(item, qty));
     }
     setSelectedItemIds(new Set());
-    setQuery('');
-    setIsOpen(false);
-    setSelectedIndex(0);
     setItemQuantities({});
+    // Keep search results visible so cashier can continue without losing search
     if (searchInputRef.current) {
+      searchInputRef.current.select();
       searchInputRef.current.focus();
     }
   };
 
-  const handleSelect = (item: Item, qty?: number, closeAndClear = true) => {
+  const handleSelect = (item: Item, qty?: number, closeAndClear = false) => {
     const finalQty = qty !== undefined ? qty : getItemQty(item.id);
     onSelectItem(item, finalQty);
     setLastAddedInfo({ id: item.id, qty: finalQty });
@@ -266,6 +267,7 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
       setItemQuantities({});
       setSelectedItemIds(new Set());
     } else {
+      // Keep search text selected so typing next code directly replaces it, while keeping current results visible
       if (searchInputRef.current) {
         searchInputRef.current.select();
       }
@@ -297,15 +299,13 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
         const targetItem = exactCodeMatch || results[selectedIndex] || results[0];
         if (targetItem) {
           const qty = getItemQty(targetItem.id);
-          handleSelect(targetItem, qty, true);
+          // Keep showing searched items so user can continue or close!
+          handleSelect(targetItem, qty, false);
         }
       }
     } else if (e.key === 'Escape') {
       e.preventDefault();
       setIsOpen(false);
-      setQuery('');
-      setItemQuantities({});
-      setSelectedItemIds(new Set());
     }
   };
 
@@ -376,26 +376,41 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
                 setIsOpen(true);
               }}
               placeholder="Scan or Search (e.g. 101 or 5*101) or Browse..."
-              className="w-full bg-slate-950 border-2 border-slate-700 focus:border-cyan-500 text-slate-100 text-xs md:text-sm font-semibold rounded-xl pl-9 md:pl-10 pr-24 py-2 outline-none transition-all placeholder:text-slate-500 shadow-inner"
+              className="w-full bg-slate-950 border-2 border-slate-700 focus:border-cyan-500 text-slate-100 text-xs md:text-sm font-semibold rounded-xl pl-9 md:pl-10 pr-28 py-2 outline-none transition-all placeholder:text-slate-500 shadow-inner"
             />
             {parsedQty > 1 && (
-              <span className="absolute right-10 px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 font-mono text-[10px] md:text-[11px] font-bold border border-amber-500/30 pointer-events-none">
-                Qty: {parsedQty}x
+              <span className="absolute right-24 px-1.5 py-0.5 rounded-md bg-amber-500/20 text-amber-300 font-mono text-[10px] md:text-[11px] font-bold border border-amber-500/30 pointer-events-none">
+                {parsedQty}x
               </span>
             )}
             {query.length > 0 && (
-              <button
-                type="button"
-                onClick={() => {
-                  setQuery('');
-                  setItemQuantities({});
-                  searchInputRef.current?.focus();
-                }}
-                className="absolute right-2.5 p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
-                title="Clear search"
-              >
-                <X className="w-4 h-4" />
-              </button>
+              <div className="absolute right-2 flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setQuery('');
+                    setItemQuantities({});
+                    searchInputRef.current?.focus();
+                  }}
+                  className="px-2 py-0.5 rounded-md bg-slate-800 hover:bg-slate-700 text-cyan-300 hover:text-white text-[11px] font-bold border border-slate-700 transition"
+                  title="Clear current search for next item (Next)"
+                >
+                  Next ➔
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setQuery('');
+                    setItemQuantities({});
+                    setSelectedItemIds(new Set());
+                    setIsOpen(false);
+                  }}
+                  className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
+                  title="Close search"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             )}
           </div>
 
@@ -451,7 +466,7 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
             </div>
 
             {/* Sub-header Controls Bar */}
-            <div className="bg-slate-950 px-3 py-2 border-b border-slate-800 flex items-center justify-between text-xs font-bold text-slate-300 shrink-0">
+            <div className="bg-slate-950 px-3 py-2 border-b border-slate-800 flex items-center justify-between text-xs font-bold text-slate-300 shrink-0 gap-2">
               <div className="flex items-center gap-2 flex-wrap">
                 <button
                   type="button"
@@ -471,11 +486,23 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
                     Deselect All
                   </button>
                 )}
-                <span className="text-slate-400 text-[11px] hidden sm:inline">
-                  • Tick checkboxes to multi-select items and add all together
+                <span className="text-slate-400 text-[11px] hidden md:inline">
+                  • {searchTerm.trim() ? `Search: "${searchTerm}" (${results.length} found)` : `Browsing: ${selectedCategory}`}
                 </span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setQuery('');
+                    setItemQuantities({});
+                    searchInputRef.current?.focus();
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 font-bold border border-cyan-500/40 transition flex items-center gap-1 text-[11px]"
+                  title="Clear search to search next item"
+                >
+                  <span>Next Search ➔</span>
+                </button>
                 {selectedItemIds.size > 0 && (
                   <button
                     type="button"
@@ -490,15 +517,13 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
                   type="button"
                   onClick={() => {
                     setIsOpen(false);
-                    setQuery('');
-                    setItemQuantities({});
-                    setSelectedItemIds(new Set());
-                    searchInputRef.current?.focus();
+                    if (searchInputRef.current) searchInputRef.current.blur();
                   }}
-                  className="px-2 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 font-bold border border-rose-500/30 transition flex items-center gap-1 text-[11px]"
+                  className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-bold border border-slate-700 transition flex items-center gap-1 text-[11px]"
+                  title="Close search panel (Esc)"
                 >
-                  <X className="w-3.5 h-3.5" />
-                  <span>Close</span>
+                  <X className="w-3.5 h-3.5 text-rose-400" />
+                  <span>Close (Esc)</span>
                 </button>
               </div>
             </div>
@@ -512,10 +537,12 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
                 </div>
               ) : (
                 results.map((item, idx) => {
-                  const displayPrice = (priceTier === 'wholesale' && item.wholesalePrice && item.wholesalePrice > 0) ? item.wholesalePrice : item.mrp;
+                  const displayPrice = (typeof item.wholesalePrice === 'number' && item.wholesalePrice > 0) ? item.wholesalePrice : item.mrp;
                   const currentQty = getItemQty(item.id);
                   const isJustAdded = lastAddedInfo?.id === item.id;
                   const isSelected = selectedItemIds.has(item.id);
+                  const cartItem = cartItems?.find(ci => ci.id === item.id || ci.itemCode === item.itemCode);
+                  const inBillQty = cartItem ? cartItem.qty : 0;
 
                   return (
                     <div
@@ -523,11 +550,11 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
                       ref={(el) => { itemRefs.current[idx] = el; }}
                       onClick={() => {
                         // If user is actively multi-selecting, clicking row toggles checkbox;
-                        // Otherwise, clicking row adds single item and clears.
+                        // Otherwise, clicking row adds single item and keeps search results visible!
                         if (selectedItemIds.size > 0) {
                           toggleSelectItem(item.id);
                         } else {
-                          handleSelect(item, currentQty, true);
+                          handleSelect(item, currentQty, false);
                         }
                       }}
                       className={`px-3 md:px-4 py-2.5 cursor-pointer flex items-center justify-between gap-3 transition-all ${
@@ -568,6 +595,12 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
                           <div className="text-xs text-slate-400 mt-0.5 flex items-center gap-2.5 flex-wrap">
                             <span className="bg-slate-800 px-1.5 py-0.5 rounded text-amber-300 font-bold border border-slate-700 text-[10px] md:text-[11px]">{item.category}</span>
                             <span className="text-[10px] md:text-[11px]">Stock: <strong className={item.stockQty < 10 ? 'text-red-400 text-xs' : 'text-emerald-400 font-bold'}>{item.stockQty}</strong></span>
+                            {inBillQty > 0 && (
+                              <span className="bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/40 px-2 py-0.5 rounded-full text-[10px] md:text-[11px] flex items-center gap-1 shadow-sm">
+                                <Check className="w-3 h-3 text-emerald-400 stroke-[3]" />
+                                In Bill: {inBillQty} pcs
+                              </span>
+                            )}
                             {item.defaultGstRate > 0 && item.isGstApplicable && (
                               <span className="text-slate-500 font-mono text-[10px] md:text-[11px]">GST {item.defaultGstRate}%</span>
                             )}
@@ -578,12 +611,10 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
                       {/* Right: Price, Quantity Stepper, & Add Button */}
                       <div className="flex items-center gap-2 md:gap-3 shrink-0" onClick={(e) => e.stopPropagation()}>
                         <div className="text-right">
-                          <div className="text-xs md:text-sm font-black text-amber-400">
+                          <div className="text-xs md:text-sm font-black text-amber-400 font-mono">
                             ₹{displayPrice}
                           </div>
-                          {item.wholesalePrice && item.wholesalePrice > 0 && priceTier === 'retail' && (
-                            <div className="text-[10px] text-slate-400 font-mono font-bold">WS: ₹{item.wholesalePrice}</div>
-                          )}
+                          <div className="text-[10px] text-slate-400 font-medium">Price</div>
                         </div>
 
                         {/* Quantity Stepper & Input */}
@@ -612,7 +643,7 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
                               if (e.key === 'Enter') {
                                 e.preventDefault();
                                 e.stopPropagation();
-                                handleSelect(item, currentQty, true);
+                                handleSelect(item, currentQty, false);
                               }
                             }}
                             className="w-9 md:w-11 text-center bg-transparent text-xs font-black font-mono text-cyan-300 outline-none p-0"
@@ -635,15 +666,17 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleSelect(item, currentQty, true);
+                            handleSelect(item, currentQty, false);
                           }}
                           className={`px-2.5 md:px-3 py-1.5 rounded-xl font-black text-xs uppercase tracking-wide shadow-md transition flex items-center gap-1 shrink-0 ${
                             isJustAdded
-                              ? 'bg-emerald-500 text-slate-950 animate-bounce'
-                              : 'bg-cyan-500 hover:bg-cyan-400 text-slate-950 active:scale-95'
+                              ? 'bg-emerald-500 text-slate-950 scale-105 ring-2 ring-emerald-300'
+                              : inBillQty > 0
+                                ? 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                                : 'bg-cyan-500 hover:bg-cyan-400 text-slate-950 active:scale-95'
                           }`}
                         >
-                          {isJustAdded ? `✓ Added ${lastAddedInfo?.qty}x!` : `+ Add (${currentQty})`}
+                          {isJustAdded ? `✓ Added ${lastAddedInfo?.qty}x!` : inBillQty > 0 ? `+ Add More (${currentQty})` : `+ Add (${currentQty})`}
                         </button>
                       </div>
                     </div>
@@ -685,6 +718,39 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
                   >
                     <Check className="w-4 h-4 stroke-[3]" />
                     <span>Add All {selectedItemIds.size} Selected Items to Bill</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Sticky Bottom Helper Bar when no checkboxes selected */}
+            {selectedItemIds.size === 0 && (
+              <div className="bg-slate-950/95 px-4 py-2.5 border-t border-slate-800 flex items-center justify-between gap-3 text-xs shrink-0">
+                <div className="text-slate-400 text-[11px] hidden sm:flex items-center gap-1.5">
+                  <span className="text-slate-300 font-bold">Items stay on screen</span> as you add them. When finished, click <strong>Done / View Bill</strong> or press <strong>Esc</strong>.
+                </div>
+                <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setQuery('');
+                      setItemQuantities({});
+                      searchInputRef.current?.focus();
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 font-bold border border-cyan-500/40 text-xs transition flex items-center gap-1"
+                  >
+                    <span>Next Search ➔</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsOpen(false);
+                      if (searchInputRef.current) searchInputRef.current.blur();
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition flex items-center gap-1 border border-slate-700"
+                  >
+                    <Check className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Done / View Bill</span>
                   </button>
                 </div>
               </div>

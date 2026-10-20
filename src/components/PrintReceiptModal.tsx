@@ -91,7 +91,7 @@ export const PrintReceiptModal: React.FC<PrintReceiptModalProps> = ({
                     <tr className="border-b border-slate-300 font-bold uppercase text-slate-700">
                       <th className="pb-1">Item</th>
                       <th className="pb-1 text-center">Qty</th>
-                      <th className="pb-1 text-right">Disc</th>
+                      <th className="pb-1 text-right">Price</th>
                       <th className="pb-1 text-right">Total</th>
                     </tr>
                   </thead>
@@ -100,9 +100,7 @@ export const PrintReceiptModal: React.FC<PrintReceiptModalProps> = ({
                       <tr key={item.id}>
                         <td className="py-1 font-semibold pr-1 break-words">{item.itemName}</td>
                         <td className="py-1 text-center font-mono">{item.qty}</td>
-                        <td className="py-1 text-right font-mono">
-                          {item.lineDiscountAmount > 0 ? (item.discountType === 'percent' ? `${item.discountValue}%` : `₹${item.discountValue}`) : '-'}
-                        </td>
+                        <td className="py-1 text-right font-mono">₹{item.mrp.toFixed(2)}</td>
                         <td className="py-1 text-right font-mono font-bold">₹{item.lineGrandTotal.toFixed(2)}</td>
                       </tr>
                     ))}
@@ -110,16 +108,26 @@ export const PrintReceiptModal: React.FC<PrintReceiptModalProps> = ({
                 </table>
               </div>
 
+              {/* Items Count Badge */}
+              <div className="flex justify-between py-1.5 px-2 bg-slate-100 rounded text-[11px] font-bold text-slate-800 border border-slate-200 my-1">
+                <span>Total Items: {invoice.items.length}</span>
+                <span className="font-mono">Total Quantity: {invoice.items.reduce((s, i) => s + i.qty, 0)} pcs</span>
+              </div>
+
               {/* Financial Totals */}
               <div className="py-2 space-y-1 text-[11px] border-b border-slate-300">
+                <div className="flex justify-between font-semibold text-slate-700">
+                  <span>Number of Items:</span>
+                  <span className="font-mono">{invoice.items.length} items ({invoice.items.reduce((s, i) => s + i.qty, 0)} pcs)</span>
+                </div>
                 <div className="flex justify-between">
-                  <span>Subtotal MRP:</span>
+                  <span>Subtotal:</span>
                   <span className="font-mono">₹{invoice.subtotalMRP.toFixed(2)}</span>
                 </div>
-                {invoice.totalDiscount > 0 && (
+                {invoice.overallDiscountAmount && invoice.overallDiscountAmount > 0 && (
                   <div className="flex justify-between font-bold text-slate-800">
-                    <span>Total Discount:</span>
-                    <span className="font-mono">-₹{invoice.totalDiscount.toFixed(2)}</span>
+                    <span>Extra Discount:</span>
+                    <span className="font-mono">-₹{invoice.overallDiscountAmount.toFixed(2)}</span>
                   </div>
                 )}
                 {invoice.totalGST > 0 && (

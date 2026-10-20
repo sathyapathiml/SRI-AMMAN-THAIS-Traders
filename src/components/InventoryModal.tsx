@@ -587,7 +587,7 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-400 mb-1">Retail MRP (₹) *</label>
+                  <label className="block font-bold text-slate-400 mb-1">Selling Price (₹) *</label>
                   <input
                     type="number"
                     min="0"
@@ -702,7 +702,7 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
                   <th className="py-2.5 px-3">Code</th>
                   <th className="py-2.5 px-3">Product Title</th>
                   <th className="py-2.5 px-3">Category</th>
-                  <th className="py-2.5 px-3 text-right">MRP (₹)</th>
+                  <th className="py-2.5 px-3 text-right">Price (₹)</th>
                   <th className="py-2.5 px-3 text-right">Wholesale (₹)</th>
                   <th className="py-2.5 px-3 text-center">Default Disc</th>
                   <th className="py-2.5 px-3 text-center">GST Rate</th>

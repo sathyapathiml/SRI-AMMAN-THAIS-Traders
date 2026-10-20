@@ -26,8 +26,8 @@ export const BillingTable: React.FC<BillingTableProps> = ({
         <div className="flex items-center gap-2">
           <h2 className="text-sm font-bold tracking-wide text-slate-200 uppercase flex items-center gap-2">
             <span>Billing Items</span>
-            <span className="px-2 py-0.5 rounded-full bg-slate-800 text-cyan-400 font-mono text-xs border border-slate-700">
-              {cartItems.length} {cartItems.length === 1 ? 'Line Item' : 'Line Items'}
+            <span className="px-2.5 py-0.5 rounded-full bg-slate-800 text-cyan-400 font-mono text-xs font-bold border border-slate-700">
+              {cartItems.length} {cartItems.length === 1 ? 'Item' : 'Items'} ({cartItems.reduce((s, i) => s + i.qty, 0)} Total Pcs)
             </span>
           </h2>
         </div>
@@ -63,9 +63,9 @@ export const BillingTable: React.FC<BillingTableProps> = ({
                 <th className="py-2.5 px-3 w-24">Code</th>
                 <th className="py-2.5 px-3 min-w-[180px]">Item Description</th>
                 <th className="py-2.5 px-3 w-16 text-center">Stock</th>
-                <th className="py-2.5 px-3 w-20 text-right">MRP (₹)</th>
+                <th className="py-2.5 px-3 w-24 text-right">Price (₹)</th>
                 <th className="py-2.5 px-3 w-32 text-center">Quantity</th>
-                <th className="py-2.5 px-3 w-40 text-center">Line Discount</th>
+                <th className="py-2.5 px-3 w-36 text-center">Extra Disc</th>
                 <th className="py-2.5 px-3 w-32 text-center">GST Rate (%)</th>
                 <th className="py-2.5 px-3 w-28 text-right">Line Total (₹)</th>
                 <th className="py-2.5 px-2 w-10 text-center"></th>
@@ -101,8 +101,8 @@ export const BillingTable: React.FC<BillingTableProps> = ({
                     </span>
                   </td>
 
-                  {/* Base MRP */}
-                  <td className="py-2 px-3 text-right font-mono font-bold text-slate-200">
+                  {/* Price */}
+                  <td className="py-2 px-3 text-right font-mono font-bold text-amber-300">
                     ₹{item.mrp.toFixed(2)}
                   </td>
 
@@ -221,6 +221,24 @@ export const BillingTable: React.FC<BillingTableProps> = ({
           </table>
         )}
       </div>
+
+      {/* Table Bottom Item Count & Summary Bar */}
+      {cartItems.length > 0 && (
+        <div className="bg-slate-950 px-4 py-2 border-t border-slate-800 flex items-center justify-between text-xs text-slate-300 font-bold shrink-0">
+          <div className="flex items-center gap-3">
+            <span className="text-cyan-400">
+              Total Items in Bill: <strong className="text-white font-mono text-sm">{cartItems.length}</strong>
+            </span>
+            <span className="text-slate-600">•</span>
+            <span className="text-amber-400">
+              Total Quantity: <strong className="text-white font-mono text-sm">{cartItems.reduce((s, i) => s + i.qty, 0)} pcs</strong>
+            </span>
+          </div>
+          <div className="font-mono text-slate-400 text-[11px] hidden sm:block">
+            Press <kbd className="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-cyan-300 font-mono text-[10px]">Ctrl+F</kbd> or <kbd className="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-cyan-300 font-mono text-[10px]">/</kbd> to search more items
+          </div>
+        </div>
+      )}
     </div>
   );
 };

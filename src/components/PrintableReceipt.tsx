@@ -60,7 +60,7 @@ export const PrintableReceipt: React.FC<PrintableReceiptProps> = ({ invoice, set
           <tr className="receipt-table-head">
             <th className="text-left">Item Description</th>
             <th className="text-center">Qty</th>
-            <th className="text-right">Disc</th>
+            <th className="text-right">Price</th>
             <th className="text-right">Total</th>
           </tr>
         </thead>
@@ -69,13 +69,7 @@ export const PrintableReceipt: React.FC<PrintableReceiptProps> = ({ invoice, set
             <tr key={item.id} className="receipt-table-row">
               <td className="receipt-item-name">{item.itemName}</td>
               <td className="text-center">{item.qty}</td>
-              <td className="text-right">
-                {item.lineDiscountAmount > 0
-                  ? item.discountType === 'percent'
-                    ? `${item.discountValue}%`
-                    : `Rs.${item.discountValue}`
-                  : '-'}
-              </td>
+              <td className="text-right">Rs.{item.mrp.toFixed(2)}</td>
               <td className="text-right font-bold">Rs.{item.lineGrandTotal.toFixed(2)}</td>
             </tr>
           ))}
@@ -84,16 +78,24 @@ export const PrintableReceipt: React.FC<PrintableReceiptProps> = ({ invoice, set
 
       <div className="receipt-divider-dashed" />
 
+      {/* Items Count Summary */}
+      <div className="receipt-row font-bold" style={{ fontSize: '11px', padding: '2px 0' }}>
+        <span>Total Items: {invoice.items.length}</span>
+        <span>Total Qty: {invoice.items.reduce((sum, item) => sum + item.qty, 0)}</span>
+      </div>
+
+      <div className="receipt-divider-dashed" />
+
       {/* Financial Summary */}
       <div className="receipt-totals">
         <div className="receipt-row">
-          <span>Subtotal MRP:</span>
+          <span>Subtotal:</span>
           <span>Rs.{invoice.subtotalMRP.toFixed(2)}</span>
         </div>
-        {invoice.totalDiscount > 0 && (
+        {invoice.overallDiscountAmount && invoice.overallDiscountAmount > 0 && (
           <div className="receipt-row font-bold">
-            <span>Total Discount Savings:</span>
-            <span>-Rs.{invoice.totalDiscount.toFixed(2)}</span>
+            <span>Extra Discount:</span>
+            <span>-Rs.{invoice.overallDiscountAmount.toFixed(2)}</span>
           </div>
         )}
         {invoice.totalGST > 0 && (

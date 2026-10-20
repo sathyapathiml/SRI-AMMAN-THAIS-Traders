@@ -61,10 +61,12 @@ export const calculateLineItem = (
   };
 };
 
-export const createCartItemFromItem = (item: Item, qty = 1, priceTier: PriceTier = 'retail'): CartLineItem => {
-  const isWholesale = priceTier === 'wholesale' && typeof item.wholesalePrice === 'number' && item.wholesalePrice > 0;
-  const price = isWholesale ? (item.wholesalePrice ?? item.mrp) : item.mrp;
-  const discountVal = isWholesale ? 0 : item.defaultDiscountValue;
+export const createCartItemFromItem = (item: Item, qty = 1, _priceTier: PriceTier = 'retail'): CartLineItem => {
+  // Always use the discounted price directly (no inflated MRP)
+  const price = (typeof item.wholesalePrice === 'number' && item.wholesalePrice > 0)
+    ? item.wholesalePrice
+    : item.mrp;
+  const discountVal = 0; // Price is already the net discounted price
 
   return calculateLineItem(
     item.itemCode,
@@ -73,9 +75,9 @@ export const createCartItemFromItem = (item: Item, qty = 1, priceTier: PriceTier
     qty,
     item.stockQty,
     discountVal,
-    item.defaultDiscountType,
-    item.defaultGstRate,
-    item.isGstApplicable
+    item.defaultDiscountType || 'percent',
+    item.defaultGstRate || 0,
+    item.isGstApplicable || false
   );
 };
 

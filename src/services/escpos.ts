@@ -130,31 +130,35 @@ export const buildEscPosBuffer = (invoice: Invoice, settings: StoreSettings, aut
   }
   printText(dividerLine('-'));
 
-  // 5. Item Columns (Width: 48 chars)
-  printText(padRight('Item Description', 20) + padRight('Qty x Rate', 12) + padRight('Disc', 6) + padLeft('Total', 10) + '\n');
+  // 5. Item Columns (Width: 48 chars) - Only Discounted Price & No MRP
+  printText(padRight('Item Description', 24) + padLeft('Qty', 6) + padLeft('Rate', 8) + padLeft('Total', 10) + '\n');
   printText(dividerLine('-'));
 
   invoice.items.forEach((item) => {
-    const nameStr = padRight(item.itemName, 20);
-    const qtyRateStr = padRight(`${item.qty}x${item.mrp}`, 12);
-    const discStr = padRight(item.lineDiscountAmount > 0 ? (item.discountType === 'percent' ? `${item.discountValue}%` : `Rs.${item.discountValue}`) : '0', 6);
+    const nameStr = padRight(item.itemName, 24);
+    const qtyStr = padLeft(`${item.qty}`, 6);
+    const rateStr = padLeft(`${item.mrp.toFixed(2)}`, 8);
     const totalStr = padLeft(`Rs.${item.lineGrandTotal.toFixed(2)}`, 10);
     
-    printText(`${nameStr}${qtyRateStr}${discStr}${totalStr}\n`);
+    printText(`${nameStr}${qtyStr}${rateStr}${totalStr}\n`);
   });
 
   printText(dividerLine('-'));
 
-  // 6. Financial Totals Summary
+  const totalItemCount = invoice.items.length;
+  const totalQuantity = invoice.items.reduce((sum, item) => sum + item.qty, 0);
+
+  push(ESC_POS_COMMANDS.BOLD_ON);
+  printText(formatLine(`Total Items: ${totalItemCount}`, `Total Qty: ${totalQuantity}`) + '\n');
+  push(ESC_POS_COMMANDS.BOLD_OFF);
+  printText(dividerLine('-'));
+
+  // 6. Financial Totals Summary - Only Discounted Subtotal & Net Payable
   push(ESC_POS_COMMANDS.ALIGN_RIGHT);
-  printText(formatLine('Subtotal MRP:', `Rs. ${invoice.subtotalMRP.toFixed(2)}`) + '\n');
+  printText(formatLine('Subtotal:', `Rs. ${invoice.subtotalMRP.toFixed(2)}`) + '\n');
 
   if (invoice.overallDiscountAmount && invoice.overallDiscountAmount > 0) {
-    printText(formatLine('Bill Overall Discount:', `- Rs. ${invoice.overallDiscountAmount.toFixed(2)}`) + '\n');
-  }
-
-  if (invoice.totalDiscount > 0) {
-    printText(formatLine('Total Discount Savings:', `- Rs. ${invoice.totalDiscount.toFixed(2)}`) + '\n');
+    printText(formatLine('Bill Extra Discount:', `- Rs. ${invoice.overallDiscountAmount.toFixed(2)}`) + '\n');
   }
 
   if (invoice.totalGST > 0) {

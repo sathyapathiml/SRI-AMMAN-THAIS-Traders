@@ -67,7 +67,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               <div className="text-xs text-slate-400 mt-1 flex items-center gap-2">
                 <span>Mode: <strong className="text-white">{paymentMode}</strong></span>
                 <span>•</span>
-                <span>Items: <strong className="text-white">{totals.itemCount}</strong></span>
+                <span>Items: <strong className="text-white">{totals.itemCount} ({totals.totalQty} pcs)</strong></span>
               </div>
             </div>
 

@@ -51,15 +51,19 @@ export const CheckoutPanel: React.FC<CheckoutPanelProps> = ({
           <Receipt className="w-4 h-4 text-cyan-400" />
           <span>Checkout & Summary</span>
         </h3>
-        <div className="text-xs font-mono font-bold text-slate-400">
-          {totals.itemCount} Items
+        <div className="text-xs font-mono font-bold text-cyan-400 bg-slate-900 px-2 py-0.5 rounded-lg border border-slate-800">
+          {totals.itemCount} Items ({totals.totalQty} Pcs)
         </div>
       </div>
 
       {/* Financial Breakdown List */}
       <div className="p-4 space-y-2.5 text-xs text-slate-300 divide-y divide-slate-800/80">
+        <div className="flex justify-between items-center pt-1 font-semibold">
+          <span className="text-slate-400">Total Items in Bill:</span>
+          <span className="font-mono text-cyan-400 font-bold">{totals.itemCount} items ({totals.totalQty} pcs)</span>
+        </div>
         <div className="flex justify-between items-center pt-1">
-          <span className="text-slate-400">Subtotal (MRP):</span>
+          <span className="text-slate-400">Subtotal:</span>
           <span className="font-mono font-bold text-slate-200">₹{totals.subtotalMRP.toFixed(2)}</span>
         </div>
 
