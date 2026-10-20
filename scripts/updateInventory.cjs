@@ -13,7 +13,7 @@ const tsItems = items.map(item => `  {
     category: ${JSON.stringify(item.category)},
     mrp: ${item.mrp},
     wholesalePrice: ${item.wholesalePrice},
-    defaultDiscountValue: 81,
+    defaultDiscountValue: 0,
     defaultDiscountType: 'percent',
     defaultGstRate: 0,
     isGstApplicable: false,
