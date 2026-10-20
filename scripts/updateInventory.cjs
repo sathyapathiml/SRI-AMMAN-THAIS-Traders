@@ -72,7 +72,7 @@ db.serialize(() => {
         item.category,
         item.mrp,
         item.wholesalePrice,
-        81,
+        0,
         'percent',
         0,
         0,

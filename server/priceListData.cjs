@@ -86,7 +86,7 @@ const items = [
   { id: '69', itemCode: 'CRK069', itemName: 'Velmayil Cold Fountain Shower - Heatless (2 Pcs)', category: 'Kids Special', mrp: 190, wholesalePrice: 190 },
   { id: '70', itemCode: 'CRK070', itemName: 'Welcome Hand Fountain Shower - Heatless (3 Pcs)', category: 'Kids Special', mrp: 220, wholesalePrice: 220 },
   { id: '71', itemCode: 'CRK071', itemName: 'Hanuman Gada Mega Multi-Color Shower (1 Pcs)', category: 'Kids Special', mrp: 180, wholesalePrice: 180 },
-  { id: '71', itemCode: 'CRK071', itemName: 'Diamond Tri Color (5 Pcs)', category: 'Kids Special', mrp: 36, wholesalePrice: 36 },
+  { id: '179', itemCode: 'CRK179', itemName: 'Diamond Tri Color (5 Pcs)', category: 'Kids Special', mrp: 36, wholesalePrice: 36 },
 
 
   // Page 3: தீப்பெட்டி மத்தாப்பு -> Matchbox Sparklers
@@ -150,7 +150,7 @@ const items = [
   { id: '113', itemCode: 'CRK113', itemName: '2" Fancy Extreme Sky Shot (3 Pcs)', category: '2 Inch Fancy 3 Pcs Shots', mrp: 250, wholesalePrice: 250 },
   { id: '114', itemCode: 'CRK114', itemName: '2" Fancy Netflix Sky Shot (3 Pcs)', category: '2 Inch Fancy 3 Pcs Shots', mrp: 250, wholesalePrice: 250 },
   { id: '115', itemCode: 'CRK115', itemName: '2" Fancy Pinky Sky Shot (3 Pcs)', category: '2 Inch Fancy 3 Pcs Shots', mrp: 250, wholesalePrice: 250 },
-  { id: '115', itemCode: 'CRK115', itemName: '3" Pandyan (3 Pcs)', category: '3 Inch Fancy 3 Pcs Shots', mrp: 500, wholesalePrice: 500 },
+  { id: '180', itemCode: 'CRK180', itemName: '3" Pandyan (3 Pcs)', category: '3 Inch Fancy 3 Pcs Shots', mrp: 500, wholesalePrice: 500 },
 
   // Page 5: 3½“ பேன்சி 2 பால் (Out) -> 3.5 Inch Fancy 2 Ball Shots
   { id: '116', itemCode: 'CRK116', itemName: 'Belli Belli 3.5" 2 Ball Shot (1 Pc)', category: '3.5 Inch Fancy 2 Ball Shots', mrp: 420, wholesalePrice: 420 },
@@ -192,9 +192,9 @@ const items = [
   { id: '140', itemCode: 'CRK140', itemName: 'Tera Mera 5" Fancy Shot (1 Pc)', category: '5 Inch Fancy Sky Shots', mrp: 620, wholesalePrice: 620 },
   { id: '141', itemCode: 'CRK141', itemName: 'Awaaz Baarish 5" Fancy Shot (1 Pc)', category: '5 Inch Fancy Sky Shots', mrp: 620, wholesalePrice: 620 },
   { id: '142', itemCode: 'CRK142', itemName: 'Boomers 5" Fancy Shot (1 Pc)', category: '5 Inch Fancy Sky Shots', mrp: 620, wholesalePrice: 620 },
-  { id: '142', itemCode: 'CRK142', itemName: 'Golden Eye wow star 5" Fancy Shot (1 Pc)', category: '5 Inch Fancy Sky Shots', mrp: 500, wholesalePrice: 500 },
-  { id: '142', itemCode: 'CRK142', itemName: 'Star War wow star 5" Fancy Shot (1 Pc)', category: '5 Inch Fancy Sky Shots', mrp: 500, wholesalePrice: 500 },
-  { id: '142', itemCode: 'CRK142', itemName: 'Seven Step 5" Fancy Shot (1 Pc)', category: '5 Inch Fancy Sky Shots', mrp: 500, wholesalePrice: 500 },
+  { id: '181', itemCode: 'CRK181', itemName: 'Golden Eye wow star 5" Fancy Shot (1 Pc)', category: '5 Inch Fancy Sky Shots', mrp: 500, wholesalePrice: 500 },
+  { id: '182', itemCode: 'CRK182', itemName: 'Star War wow star 5" Fancy Shot (1 Pc)', category: '5 Inch Fancy Sky Shots', mrp: 500, wholesalePrice: 500 },
+  { id: '183', itemCode: 'CRK183', itemName: 'Seven Step 5" Fancy Shot (1 Pc)', category: '5 Inch Fancy Sky Shots', mrp: 500, wholesalePrice: 500 },
 
   // Page 6: 6“ பேன்சி சோனி ஸ்பெஷல் -> 6 Inch Fancy Sony Special
   { id: '143', itemCode: 'CRK143', itemName: 'Oscar 6" Sony Special Shot (2 Pcs)', category: '6 Inch Fancy Sony Special', mrp: 1500, wholesalePrice: 1500 },
